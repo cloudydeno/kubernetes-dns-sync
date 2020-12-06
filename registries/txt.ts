@@ -22,6 +22,7 @@ export class TxtRegistry implements DnsRegistry<TxtRegistryContext> {
 class TxtRegistryContext implements DnsRegistryContext {
   constructor(private registry: TxtRegistry) {}
   heritageRecords = new Map<string, Endpoint>();
+  unusedNames = new Set<string>();
 
   RecognizeLabels(raw: Endpoint[]): Promise<Endpoint[]> {
     const byNameMap = new Map<string, Endpoint[]>();
@@ -56,17 +57,54 @@ class TxtRegistryContext implements DnsRegistryContext {
         byNameMap.set(recordset.DNSName, [recordset]);
       }
     }
+
+    this.unusedNames = new Set<string>(nameLabelsMap.keys());
     for (const [name, labels] of nameLabelsMap) {
       for (const rec of byNameMap.get(name) ?? []) {
         rec.Labels = labels;
+        this.unusedNames.delete(name);
       }
     }
     return Promise.resolve(Array.from(byNameMap.values()).flat());
   }
 
   CommitLabels(changes: Changes): Promise<Changes> {
-    console.log(this, changes);
-    throw new Error("Method not implemented.");
+    const deletedTxts = new Set<string>();
+    const realChanges = new Changes(changes.sourceRecords,
+      new Array<Endpoint>().concat(
+        changes.existingRecords,
+        Array.from(this.heritageRecords.values())));
+
+    if (changes.Delete.length >= 1 && changes.Create.length === 0 && changes.Update.length === 0) {
+
+      // copy over all deletes, and also their heritage, only once
+      for (const deleted of changes.Delete) {
+        realChanges.Delete.push(deleted);
+        const txtName = this.registry.recordPrefix + deleted.DNSName;
+        if (!deletedTxts.has(txtName)) {
+          const heritage = this.heritageRecords.get(txtName);
+          if (!heritage) throw new Error(`BUG: didn't find heritage record ${txtName}`);
+          realChanges.Delete.push(heritage);
+          deletedTxts.add(txtName);
+        }
+      }
+
+    } else if (changes.length() > 0) {
+      console.log(this, changes.Create, changes.Update, changes.Delete);
+      throw new Error("Method only partially implemented.");
+    }
+
+    for (const create of changes.Create) {
+      this.unusedNames.delete(create.DNSName);
+    }
+    for (const unusedName of this.unusedNames) {
+      const txtName = this.registry.recordPrefix + unusedName;
+      const heritage = this.heritageRecords.get(txtName);
+      if (!heritage) throw new Error(`BUG: didn't find heritage record ${txtName}`);
+      realChanges.Delete.push(heritage);
+    }
+
+    return Promise.resolve(realChanges);
   }
 
 }

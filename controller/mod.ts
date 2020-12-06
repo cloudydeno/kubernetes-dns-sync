@@ -64,7 +64,7 @@ const p2 = '-->';
 const p1 = '==>';
 const p0 = '!!!';
 
-for await (const _ of fixedInterval(config.interval_seconds ?? 60)) {
+for await (const _ of fixedInterval((config.interval_seconds ?? 60) * 1000)) {
   console.log();
   console.log('---', new Date());
 
@@ -85,27 +85,21 @@ for await (const _ of fixedInterval(config.interval_seconds ?? 60)) {
     const existingRecords = await registryCtx.RecognizeLabels(rawExisting);
     console.log(p2, 'Found', existingRecords.length, 'existing records from', provider.config.type);
 
-    // Support publishing a subset of discovered endpoints to each place
-    // let relevantEndpoints = sourceRecords;
-    // if (provider.config.annotation_filter) {
-    //   const requiredAnnotations = Object.entries(provider.config.annotation_filter);
-    //   relevantEndpoints = relevantEndpoints.filter(endpoint => {
-    //     if (!endpoint.Annotations) return false;
-    //     for (const [key, val] of requiredAnnotations) {
-    //       if (endpoint.Annotations[key] !== val) return false;
-    //     }
-    //     return true;
-    //   });
-    // }
-
     const changes = planner.PlanChanges(sourceRecords, existingRecords);
-    console.log(p3, 'Changes:', ...changes.summary());
+    console.log(p3, 'Planner changes:', ...changes.summary());
+
     console.log(p3, 'Encoding changed ownership labels...');
     const rawChanges = await registryCtx.CommitLabels(changes);
+    if (rawChanges.length() === 0) {
+      console.log(p2, 'Provider', provider.config.type, 'has no necesary changes.');
+      continue;
+    }
 
     console.log(p1, 'Submitting', ...rawChanges.summary(), 'to', provider.config.type, '...');
     await provider.ApplyChanges(rawChanges);
     console.log(p2, 'Provider', provider.config.type, 'is now up to date.');
   }
 
+  if (Deno.args.includes('--once')) break;
 }
+console.log(p3, 'Process completed without error.');

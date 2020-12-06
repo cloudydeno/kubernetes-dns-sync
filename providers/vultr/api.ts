@@ -7,7 +7,7 @@ export class VultrApi {
     this.#apiKey = apiKey;
   }
 
-  _doHttp(path: string, opts?: RequestInit & {query: URLSearchParams}) {
+  _doHttp(path: string, opts?: RequestInit & {query?: URLSearchParams}) {
     if (opts?.query.toString()) {
       path += (path.includes('?') ? '&' : '?') + opts.query.toString();
     }
@@ -48,6 +48,36 @@ export class VultrApi {
     } while (page.meta.links.next);
   }
 
+  createRecord(zone: string, record: DnsRecord): Promise<DnsRecord> {
+    if (!zone) throw new Error(`Zone is required`);
+    if (!record) throw new Error(`Record is required`);
+    return this._doHttp(`/v2/domains/${zone}/records`, {
+      method: 'POST',
+      body: JSON.stringify(record),
+      headers: {
+        'content-type': 'application/json',
+      }});
+  }
+
+  async updateRecord(zone: string, recordId: string, changes: Partial<Omit<DnsRecordData, "type">>): Promise<void> {
+    if (!zone) throw new Error(`Zone is required`);
+    if (!recordId) throw new Error(`Record ID is required`);
+    if (!changes) throw new Error(`Record changes are required`);
+    await this._doHttp(`/v2/domains/${zone}/records/${recordId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(changes),
+      headers: {
+        'content-type': 'application/json',
+      }});
+  }
+
+  async deleteRecord(zone: string, recordId: string): Promise<void> {
+    if (!zone) throw new Error(`Zone is required`);
+    if (!recordId) throw new Error(`Record ID is required`);
+    await this._doHttp(`/v2/domains/${zone}/records/${recordId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 interface DomainList {
@@ -58,15 +88,22 @@ interface DomainList {
   meta: ListMeta;
 };
 
+interface DnsRecordData {
+  type: string;
+  name: string;
+  data: string;
+  priority?: number;
+  ttl?: number;
+}
+
+interface DnsRecord extends DnsRecordData {
+  id: string;
+  priority: number;
+  ttl: number;
+}
+
 interface RecordList {
-  records: Array<{
-    id: string;
-    type: string;
-    name: string;
-    data: string;
-    priority: number;
-    ttl: number;
-  }>;
+  records: Array<DnsRecord>;
   meta: ListMeta;
 }
 

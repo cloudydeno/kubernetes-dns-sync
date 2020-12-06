@@ -9,10 +9,13 @@ type VultrEntry = Endpoint & {
 export class VultrProvider implements DnsProvider {
   constructor(public config: VultrProviderConfig) {}
   #api = new VultrApi();
+  domainFilter = new Set(this.config.domain_filter ?? []);
 
   async Records(): Promise<Endpoint[]> {
     const endpoints = new Array<Endpoint>(); // every recordset we find
     for await (const {domain} of this.#api.listAllZones()) {
+      if (this.domainFilter.size > 0 && !this.domainFilter.has(domain)) continue;
+
       const endpMap = new Map<string, VultrEntry>(); // collapse targets with same name/type/priority
       for await (const record of this.#api.listAllRecords(domain)) {
 
@@ -45,12 +48,15 @@ export class VultrProvider implements DnsProvider {
   }
 
   ApplyChanges(changes: Changes): Promise<void> {
+    for (const deleted of changes.Delete) {
+      
+    }
     throw new Error("Method not implemented.");
   }
 
 }
 
-/// Basic function for non-special cases
+/// Support splitting records and still keeping vultrIds
 export function SplitOutTarget(this: VultrEntry, predicate: (t: string) => boolean): [VultrEntry, VultrEntry] {
   const idxs = new Set(this.Targets.flatMap((x, idx) => predicate(x) ? [idx] : []));
   return [{

@@ -48,6 +48,7 @@ export interface GoogleProviderConfig {
 }
 export interface VultrProviderConfig {
   type: "vultr";
+  domain_filter?: string[];
 }
 export type ProviderConfig =
 | GoogleProviderConfig
