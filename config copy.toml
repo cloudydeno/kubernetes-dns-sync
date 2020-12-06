@@ -1,0 +1,29 @@
+[[source]]
+type = "ingress"
+# This TOML parser is multiple kinds of wrong
+# Inline should be this:
+# annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
+# ... but the parser tries reading as JSON.
+# Inline could be this:
+# annotation_filter = { "\"kubernetes.io/ingress.class\"" = "nginx" }
+# ... but the parser interprets the dot in the key.
+# Expanded should be this:
+#[provider.annotation_filter]
+#"kubernetes.io/ingress.class" = "nginx"
+# ... but the key just silently gets lost.
+# This is what actually works as of std@0.79:
+annotation_filter = { "\"kubernetes.io/ingress.class\"": "nginx" }
+ # also this comment is read as a key because it = "indented"
+
+[[source]]
+type = "node"
+address_type = "ExternalIP"
+fqdn_template = "{{index .Labels \"kubernetes.io/hostname\"}}.nodes.example.com"
+
+[[provider]]
+type = "vultr"
+
+[registry]
+type = "txt"
+txt_prefix = "_registry."
+txt_owner_id = "cluster-id"
