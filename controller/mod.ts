@@ -77,13 +77,15 @@ for await (const _ of fixedInterval((config.interval_seconds ?? 60) * 1000)) {
   console.log(p2, 'Discovered', sourceRecords.length, 'desired records overall');
 
   for (const provider of providers) {
+    const providerId = provider.config.type;
+    const providerCtx = await provider.NewContext();
     const registryCtx = registry.NewContext();
 
-    console.log(p3, 'Loading existing records from', provider.config.type, '...');
-    const rawExisting = await provider.Records();
+    console.log(p3, 'Loading existing records from', providerId, '...');
+    const rawExisting = await providerCtx.Records();
     console.log(p3, 'Recognizing ownership labels on', rawExisting.length, 'records...');
     const existingRecords = await registryCtx.RecognizeLabels(rawExisting);
-    console.log(p2, 'Found', existingRecords.length, 'existing records from', provider.config.type);
+    console.log(p2, 'Found', existingRecords.length, 'existing records from', providerId);
 
     const changes = planner.PlanChanges(sourceRecords, existingRecords);
     console.log(p3, 'Planner changes:', ...changes.summary());
@@ -91,13 +93,13 @@ for await (const _ of fixedInterval((config.interval_seconds ?? 60) * 1000)) {
     console.log(p3, 'Encoding changed ownership labels...');
     const rawChanges = await registryCtx.CommitLabels(changes);
     if (rawChanges.length() === 0) {
-      console.log(p2, 'Provider', provider.config.type, 'has no necesary changes.');
+      console.log(p2, 'Provider', providerId, 'has no necesary changes.');
       continue;
     }
 
-    console.log(p1, 'Submitting', ...rawChanges.summary(), 'to', provider.config.type, '...');
-    await provider.ApplyChanges(rawChanges);
-    console.log(p2, 'Provider', provider.config.type, 'is now up to date.');
+    console.log(p1, 'Submitting', ...rawChanges.summary(), 'to', providerId, '...');
+    await providerCtx.ApplyChanges(rawChanges);
+    console.log(p2, 'Provider', providerId, 'is now up to date.');
   }
 
   if (Deno.args.includes('--once')) break;

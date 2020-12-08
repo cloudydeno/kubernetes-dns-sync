@@ -1,4 +1,8 @@
-export interface DnsProvider {
+export interface DnsProvider<T extends DnsProviderContext> {
+	NewContext(): Promise<T>;
+}
+export interface DnsProviderContext {
+	Zones: Zone[];
 	Records(): Promise<Array<Endpoint>>;
 	ApplyChanges(changes: Changes): Promise<void>;
 }
@@ -16,6 +20,12 @@ export interface DnsRegistry<T extends DnsRegistryContext> {
 export interface DnsRegistryContext {
 	RecognizeLabels(raw: Array<Endpoint>): Promise<Array<Endpoint>>;
 	CommitLabels(changes: Changes): Promise<Changes>;
+}
+
+/** Zone is a basic structure indicating what DNS names are available */
+export interface Zone {
+	/** The hostname of the DNS zone */
+	DNSName: string;
 }
 
 /** Endpoint is a high-level way of a connection between a service and an IP */
