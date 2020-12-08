@@ -1,4 +1,4 @@
-import { TxtRegistryConfig, Changes, DnsRegistry, DnsRegistryContext, Endpoint } from "../common/mod.ts";
+import { TxtRegistryConfig, Changes, DnsRegistry, DnsRegistryContext, Endpoint, SplitOutTarget } from "../common/mod.ts";
 
 /** Manages record ownership in-band with regular TXT records */
 export class TxtRegistry implements DnsRegistry<TxtRegistryContext> {
@@ -61,7 +61,10 @@ class TxtRegistryContext implements DnsRegistryContext {
     this.unusedNames = new Set<string>(nameLabelsMap.keys());
     for (const [name, labels] of nameLabelsMap) {
       for (const rec of byNameMap.get(name) ?? []) {
-        rec.Labels = labels;
+        const hasTypes = Object.keys(labels).some(x => x.startsWith('record-type/'));
+        if (!hasTypes || labels[`record-type/${rec.RecordType}`]) {
+          rec.Labels = labels;
+        }
         this.unusedNames.delete(name);
       }
     }
@@ -70,12 +73,13 @@ class TxtRegistryContext implements DnsRegistryContext {
 
   CommitLabels(changes: Changes): Promise<Changes> {
     const deletedTxts = new Set<string>();
+    const createdTxtLabels = new Map<string,Record<string,string>>();
     const realChanges = new Changes(changes.sourceRecords,
       new Array<Endpoint>().concat(
         changes.existingRecords,
         Array.from(this.heritageRecords.values())));
 
-    if (changes.Delete.length >= 1 && changes.Create.length === 0 && changes.Update.length === 0) {
+    // if (changes.Delete.length >= 1 && changes.Create.length === 0 && changes.Update.length === 0) {
 
       // copy over all deletes, and also their heritage, only once
       for (const deleted of changes.Delete) {
@@ -89,9 +93,41 @@ class TxtRegistryContext implements DnsRegistryContext {
         }
       }
 
-    } else if (changes.length() > 0) {
-      console.log(this, changes.Create, changes.Update, changes.Delete);
-      throw new Error("Method only partially implemented.");
+      // copy over all creates, and also their heritage, only once
+      for (const created of changes.Create) {
+        realChanges.Create.push(created);
+        const txtName = this.registry.recordPrefix + created.DNSName;
+        const existingHeritage = this.heritageRecords.get(txtName);
+        if (existingHeritage) {
+          console.log(created, existingHeritage);
+          throw new Error(`TODO: record creations with existing heritage for ${txtName}`);
+        }
+
+        let existingLabels = createdTxtLabels.get(txtName);
+        if (!existingLabels) {
+          existingLabels = {
+            'heritage': 'external-dns',
+            'external-dns/owner': this.registry.ownerId,
+            ...created.Labels,
+          };
+          createdTxtLabels.set(txtName, existingLabels);
+        } // TODO: if multiple sources, clean up the more specific labels
+        existingLabels['record-type/'+created.RecordType] = 'managed';
+      }
+
+      for (const [name, labels] of createdTxtLabels) {
+        realChanges.Create.push({
+          DNSName: name,
+          RecordType: 'TXT',
+          Targets: [Object.entries(labels).map(x => x.join('=')).join(',')],
+          SplitOutTarget,
+        });
+      }
+
+    for (const [before, after] of changes.Update) {
+      console.log('!!! WARNING: TXT provider is assuming that', before.DNSName, 'change requires no TXT changes');
+      realChanges.Update.push([before, after]);
+      // console.log(this, changes.Create, changes.Update, changes.Delete);
     }
 
     for (const create of changes.Create) {

@@ -28,7 +28,7 @@ const sources = config.source.map(source => {
     case 'ingress':
       return new IngressSource(source, kubernetesClient);
     case 'crd':
-      return new CrdSource(source);
+      return new CrdSource(source, kubernetesClient);
     case 'node':
       return new NodeSource(source, kubernetesClient);
     default:

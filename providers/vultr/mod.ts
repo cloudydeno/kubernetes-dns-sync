@@ -4,6 +4,7 @@ import { VultrApi } from "./api.ts";
 // Store metadata on our Endpoints because the API has its own opaque per-target IDs
 type VultrEntry = Endpoint & {
   vultrIds: string[];
+  vultrZone: string;
 };
 
 export class VultrProvider implements DnsProvider {
@@ -36,6 +37,7 @@ export class VultrProvider implements DnsProvider {
             RecordTTL: record.ttl >= 0 ? record.ttl : undefined,
             Priority: priority ?? undefined,
             vultrIds: [record.id],
+            vultrZone: domain,
             SplitOutTarget,
           };
           endpoints.push(endp);
@@ -47,11 +49,49 @@ export class VultrProvider implements DnsProvider {
     return endpoints;
   }
 
-  ApplyChanges(changes: Changes): Promise<void> {
-    for (const deleted of changes.Delete) {
-      
+  async ApplyChanges(changes: Changes): Promise<void> {
+    console.log(changes.Create, changes.Update, changes.Delete);
+    if (prompt(`Proceed with editing Vultr records?`, 'yes') !== 'yes') throw new Error(
+      `User declined to perform Vultr operations`);
+
+    for (const deleted of changes.Delete as VultrEntry[]) {
+      if (!deleted.vultrIds || deleted.vultrIds.length !== deleted.Targets.length) throw new Error(`BUG`);
+      for (const id of deleted.vultrIds) {
+        await this.#api.deleteRecord(deleted.vultrZone, id);
+      }
     }
-    throw new Error("Method not implemented.");
+
+    for (const [before, after] of changes.Update as Array<[VultrEntry, Endpoint]>) {
+      const zone = before.vultrZone;
+      // TODO: be more efficient with updating-in-place
+      for (const recordId of before.vultrIds) {
+        await this.#api.deleteRecord(zone, recordId);
+      }
+      for (const target of after.Targets) {
+        await this.#api.createRecord(zone, {
+          name: after.DNSName == zone ? '' : after.DNSName.slice(0, -zone.length - 1),
+          type: after.RecordType,
+          data: after.RecordType === 'TXT' ? `"${target}"` : target,
+          ttl: after.RecordTTL ?? undefined,
+          priority: after.Priority ?? undefined,
+        });
+      }
+    }
+
+    for (const created of changes.Create) {
+      const zone = 'devmode.cloud';
+      for (const target of created.Targets) {
+        await this.#api.createRecord(zone, {
+          name: created.DNSName == zone ? '' : created.DNSName.slice(0, -zone.length - 1),
+          type: created.RecordType,
+          data: created.RecordType === 'TXT' ? `"${target}"` : target,
+          ttl: created.RecordTTL ?? undefined,
+          priority: created.Priority ?? undefined,
+        });
+      }
+    }
+
+    // throw new Error("Method not implemented.");
   }
 
 }

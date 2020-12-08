@@ -7,18 +7,23 @@ export class VultrApi {
     this.#apiKey = apiKey;
   }
 
-  _doHttp(path: string, opts?: RequestInit & {query?: URLSearchParams}) {
-    if (opts?.query.toString()) {
+  async _doHttp(path: string, opts?: RequestInit & {query?: URLSearchParams}) {
+    if (opts?.query?.toString()) {
       path += (path.includes('?') ? '&' : '?') + opts.query.toString();
     }
     const headers = new Headers(opts?.headers);
     headers.set('authorization', `Bearer ${this.#apiKey}`);
     headers.set('accept', `application/json`);
-    console.log(opts?.method ?? 'GET', 'vultr', path);
-    return fetch(new URL(path, `https://api.vultr.com`), {
+    const resp = await fetch(new URL(path, `https://api.vultr.com`), {
       ...opts,
       headers,
-    }).then(x => x.json());
+    });
+    console.log(opts?.method ?? 'GET', 'vultr', path, resp.status);
+    if (resp.status == 204) {
+      resp.text();
+      return null;
+    }
+    return await resp.json();
   }
 
   listZones(pageToken?: string): Promise<DomainList> {
@@ -48,7 +53,7 @@ export class VultrApi {
     } while (page.meta.links.next);
   }
 
-  createRecord(zone: string, record: DnsRecord): Promise<DnsRecord> {
+  createRecord(zone: string, record: DnsRecordData): Promise<DnsRecord> {
     if (!zone) throw new Error(`Zone is required`);
     if (!record) throw new Error(`Record is required`);
     return this._doHttp(`/v2/domains/${zone}/records`, {
