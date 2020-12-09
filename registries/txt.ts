@@ -1,4 +1,8 @@
-import { TxtRegistryConfig, Changes, DnsRegistry, DnsRegistryContext, Endpoint, SplitOutTarget } from "../common/mod.ts";
+import {
+  TxtRegistryConfig,
+  DnsRegistry, DnsRegistryContext,
+  Zone, Changes, Endpoint, SplitOutTarget,
+} from "../common/mod.ts";
 
 /** Manages record ownership in-band with regular TXT records */
 export class TxtRegistry implements DnsRegistry<TxtRegistryContext> {
@@ -14,7 +18,7 @@ export class TxtRegistry implements DnsRegistry<TxtRegistryContext> {
     if (this.recordSuffix) throw new Error(`TODO: txt suffixes - where do they go?`);
   }
 
-  NewContext() {
+  NewContext(zones: Zone[]) {
     return new TxtRegistryContext(this);
   }
 }

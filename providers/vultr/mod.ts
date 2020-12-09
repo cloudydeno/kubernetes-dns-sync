@@ -17,12 +17,12 @@ export class VultrProvider implements DnsProvider<VultrProviderContext> {
   ) {}
   private api = new VultrApi();
 
-	async NewContext(): Promise<VultrProviderContext> {
+	async NewContext() {
     const zones = new Array<Zone>();
     const domainFilter = new Set(this.config.domain_filter ?? []);
     for await (const {domain} of this.api.listAllZones()) {
       if (domainFilter.size > 0 && !domainFilter.has(domain)) continue;
-      zones.push({DNSName: domain});
+      zones.push({DNSName: domain, ZoneID: domain});
     }
     return new VultrProviderContext(this.config, zones, this.api);
   }
@@ -34,6 +34,11 @@ export class VultrProviderContext implements DnsProviderContext {
     public Zones: Array<Zone>,
     private api: VultrApi,
   ) {}
+
+  findZoneForName(dnsName: string): Zone | undefined {
+    const matches = this.Zones.filter(x => x.DNSName == dnsName || dnsName.endsWith('.'+x.DNSName));
+    return matches.sort((a,b) => b.DNSName.length - a.DNSName.length)[0];
+  }
 
   async Records(): Promise<Endpoint[]> {
     const endpoints = new Array<Endpoint>(); // every recordset we find
@@ -98,10 +103,12 @@ export class VultrProviderContext implements DnsProviderContext {
     }
 
     for (const created of changes.Create) {
-      const zone = 'devmode.cloud';
+      const zone = this.findZoneForName(created.DNSName);
+      if (!zone) continue;
+
       for (const target of created.Targets) {
-        await this.api.createRecord(zone, {
-          name: created.DNSName == zone ? '' : created.DNSName.slice(0, -zone.length - 1),
+        await this.api.createRecord(zone.ZoneID, {
+          name: created.DNSName.slice(0, -zone.DNSName.length - 1),
           type: created.RecordType,
           data: created.RecordType === 'TXT' ? `"${target}"` : target,
           ttl: created.RecordTTL ?? undefined,

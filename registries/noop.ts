@@ -1,11 +1,15 @@
-import { NoopRegistryConfig, Changes, DnsRegistry, DnsRegistryContext, Endpoint } from "../common/mod.ts";
+import {
+  NoopRegistryConfig,
+  DnsRegistry, DnsRegistryContext,
+  Zone, Changes, Endpoint,
+} from "../common/mod.ts";
 
 /** Does absolutely nothing about record ownership. */
 export class NoopRegistry implements DnsRegistry<NoopRegistryContext> {
 
   constructor(public config: NoopRegistryConfig) {}
 
-  NewContext() {
+  NewContext(zones: Zone[]) {
     return new NoopRegistryContext(this);
   }
 }

@@ -1,7 +1,16 @@
-import { Changes, Endpoint } from "../common/contract.ts";
+import { Zone, Changes, Endpoint } from "../common/contract.ts";
 import { intersection, union } from "../common/set-util.ts";
 
 export class Planner {
+  constructor(
+    private zones: Zone[],
+  ) {}
+
+  findZoneForName(dnsName: string): Zone | undefined {
+    const matches = this.zones.filter(x => x.DNSName == dnsName || dnsName.endsWith('.'+x.DNSName));
+    return matches.sort((a,b) => b.DNSName.length - a.DNSName.length)[0];
+  }
+
   PlanChanges(sourceRecords: Endpoint[], existingRecords: Endpoint[]): Changes {
     const changes = new Changes(sourceRecords, existingRecords);
 
@@ -35,11 +44,11 @@ export class Planner {
     }
 
     for (const [name, records] of recordsByName) {
+      const zone = this.findZoneForName(name);
+      if (!zone) continue;
+
       // No actions: Unmanaged records with no intention to conflict
       if (records.source.length === 0 && records.oursExisting.length === 0) continue;
-
-      // TODO: proper domain filter
-      if (!name.endsWith('devmode.cloud')) continue;
 
       const sourceTypes = new Set(records.source.map(x => x.RecordType));
       const oursExistingTypes = new Set(records.oursExisting.map(x => x.RecordType));

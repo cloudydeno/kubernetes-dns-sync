@@ -58,7 +58,6 @@ const registry = [config.registry].map(registry => {
   }
 })[0];
 
-const planner = new Planner;
 const p3 = '   ';
 const p2 = '-->';
 const p1 = '==>';
@@ -79,7 +78,7 @@ for await (const _ of fixedInterval((config.interval_seconds ?? 60) * 1000)) {
   for (const provider of providers) {
     const providerId = provider.config.type;
     const providerCtx = await provider.NewContext();
-    const registryCtx = registry.NewContext();
+    const registryCtx = registry.NewContext(providerCtx.Zones);
 
     console.log(p3, 'Loading existing records from', providerId, '...');
     const rawExisting = await providerCtx.Records();
@@ -87,6 +86,7 @@ for await (const _ of fixedInterval((config.interval_seconds ?? 60) * 1000)) {
     const existingRecords = await registryCtx.RecognizeLabels(rawExisting);
     console.log(p2, 'Found', existingRecords.length, 'existing records from', providerId);
 
+    const planner = new Planner(providerCtx.Zones);
     const changes = planner.PlanChanges(sourceRecords, existingRecords);
     console.log(p3, 'Planner changes:', ...changes.summary());
 

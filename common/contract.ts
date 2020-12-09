@@ -15,7 +15,7 @@ export interface DnsSource {
 }
 
 export interface DnsRegistry<T extends DnsRegistryContext> {
-	NewContext(): T;
+	NewContext(zones: Zone[]): T;
 }
 export interface DnsRegistryContext {
 	RecognizeLabels(raw: Array<Endpoint>): Promise<Array<Endpoint>>;
@@ -26,6 +26,8 @@ export interface DnsRegistryContext {
 export interface Zone {
 	/** The hostname of the DNS zone */
 	DNSName: string;
+	/** The provider's opaque ID for this zone. */
+	ZoneID: string;
 }
 
 /** Endpoint is a high-level way of a connection between a service and an IP */
