@@ -97,6 +97,23 @@ for await (const _ of fixedInterval((config.interval_seconds ?? 60) * 1000)) {
       continue;
     }
 
+    for (const rec of rawChanges.Create) {
+      console.log(p2, '- Create:', rec.RecordType, rec.DNSName, rec.Targets);
+    }
+    for (const [recOld, recNew] of rawChanges.Update) {
+      console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName, recOld.Targets, '->', recNew.Targets);
+    }
+    for (const rec of rawChanges.Delete) {
+      console.log(p2, '- Delete:', rec.RecordType, rec.DNSName, rec.Targets);
+    }
+
+    if (Deno.args.includes('--dry-run')) {
+      console.log(p1, "Doing no changes due to --dry-run");
+    } else if (!Deno.args.includes('--yes')) {
+      if (prompt(`Proceed with editing provider records?`, 'yes') !== 'yes') throw new Error(
+        `User declined to perform provider edits`);
+    }
+
     console.log(p1, 'Submitting', ...rawChanges.summary(), 'to', providerId, '...');
     await providerCtx.ApplyChanges(rawChanges);
     console.log(p2, 'Provider', providerId, 'is now up to date.');

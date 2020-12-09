@@ -72,9 +72,6 @@ export class VultrProviderContext implements DnsProviderContext {
   }
 
   async ApplyChanges(changes: Changes): Promise<void> {
-    console.log(changes.Create, changes.Update, changes.Delete);
-    if (prompt(`Proceed with editing Vultr records?`, 'yes') !== 'yes') throw new Error(
-      `User declined to perform Vultr operations`);
 
     for (const deleted of changes.Delete as VultrEntry[]) {
       if (!deleted.vultrIds || deleted.vultrIds.length !== deleted.Targets.length) throw new Error(`BUG`);
@@ -113,7 +110,6 @@ export class VultrProviderContext implements DnsProviderContext {
       }
     }
 
-    // throw new Error("Method not implemented.");
   }
 
 }
