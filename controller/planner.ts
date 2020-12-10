@@ -63,14 +63,19 @@ export class Planner {
         `For ${name}, a CNAME already exists, so I can't really add anything.`);
 
       for (const type of allTypes) {
-        if (type === 'MX' || type === 'SRV') {
-          console.log(type, name, records)
-        }
-        if (type === 'MX' || type === 'SRV') throw new Error(`TODO: MX/SRV priority not impl'd yet`);
         const desiredEndps = records.source.filter(x => x.RecordType === type);
         const actualEndps = records.oursExisting.filter(x => x.RecordType === type);
         const desired = new Set(desiredEndps.flatMap(x => x.Targets));
         const actual = new Set(actualEndps.flatMap(x => x.Targets));
+
+        if (type === 'SRV') throw new Error(`TODO: SRV not impl'd yet`);
+        if (type === 'MX') {
+          const allPriosInvolved = new Set(desiredEndps.map(x => x.Priority).concat(actualEndps.map(x => x.Priority)));
+          if (allPriosInvolved.size > 1) {
+            console.log(type, name, records);
+            throw new Error(`TODO: MX with multiple priorities not impl'd yet`);
+          }
+        }
 
         const inCommon = intersection(desired, actual);
         if (inCommon.size === desired.size && inCommon.size === actual.size) continue;
