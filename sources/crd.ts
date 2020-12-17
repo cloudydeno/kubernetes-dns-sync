@@ -1,7 +1,9 @@
 import { CrdSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion } from "../common/mod.ts";
+import { Reflector } from "../common/streaming.ts";
 
 import { RestClient } from "https://deno.land/x/kubernetes_client@v0.1.0/mod.ts";
-import { ExternaldnsV1alpha1Api } from "https://uber.danopia.net/deno/gke-apis/externaldns.k8s.io@v1alpha1/mod.ts";
+// import { Reflector } from "https://deno.land/x/kubernetes_apis@v0.1.0/streaming.ts";
+import { ExternaldnsV1alpha1Api, DNSEndpointFields } from "https://uber.danopia.net/deno/gke-apis/externaldns.k8s.io@v1alpha1/mod.ts";
 
 export class CrdSource implements DnsSource {
 
@@ -12,10 +14,16 @@ export class CrdSource implements DnsSource {
   crdApi = new ExternaldnsV1alpha1Api(this.client);
   requiredAnnotations = Object.entries(this.config.annotation_filter ?? {});
 
+  reflector?: Reflector<DNSEndpointFields>;
+  inSync = false;
+
   async Endpoints() {
     const endpoints = new Array<Endpoint>();
 
-    ings: for (const node of (await this.crdApi.getDNSEndpointListForAllNamespaces()).items) {
+    const resources = (this.inSync ? this.reflector?.listCached() : null)
+      ?? (await this.crdApi.getDNSEndpointListForAllNamespaces()).items;
+
+    ings: for (const node of resources) {
       if (!node.metadata || !node.spec?.endpoints) continue ings;
 
       if (this.requiredAnnotations.length > 0) {
@@ -58,8 +66,35 @@ export class CrdSource implements DnsSource {
     return endpoints;
   }
 
-  AddEventHandler(cb: () => void): void {
-    throw new Error("Method not implemented.");
+  async* AddEventHandler(): AsyncGenerator<void> {
+    if (!this.reflector) {
+      this.reflector = new Reflector(
+        opts => this.crdApi.getDNSEndpointListForAllNamespaces({ ...opts }),
+        opts => this.crdApi.watchDNSEndpointListForAllNamespaces({ ...opts }));
+      this.reflector.run(); // kinda just toss this away...
+    } else {
+      console.log(`WARN: Adding another event handler to existing reflector`);
+    }
+
+    console.log('observing CRDs...');
+    this.inSync = false;
+    for await (const evt of this.reflector.observeAll()) {
+      switch (evt.type) {
+        case 'SYNCED':
+          yield;
+          this.inSync = true; // start allowing falling-edge runs
+          break;
+        case 'DESYNCED':
+          this.inSync = false; // block runs during resync inconsistencies
+          break;
+        case 'ADDED':
+        case 'MODIFIED':
+        case 'DELETED':
+          if (this.inSync) yield;
+          break;
+      }
+    }
+    console.log('CRD observer done');
   }
 
 }

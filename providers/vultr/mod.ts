@@ -6,6 +6,7 @@ import {
 import { VultrApi } from "./api.ts";
 
 // Store metadata on our Endpoints because the API has its own opaque per-target IDs
+// TODO: do this a different way (Map on the Context)
 type VultrEntry = Endpoint & {
   vultrIds: string[];
   vultrZone: string;

@@ -11,7 +11,8 @@ export interface DnsProviderContext {
 export interface DnsSource {
 	Endpoints(): Promise<Array<Endpoint>>;
 	// AddEventHandler adds an event handler that should be triggered if something in source changes
-	AddEventHandler(cb: () => void): void;
+	// AddEventHandler(cb: () => void): void;
+  AddEventHandler(): AsyncGenerator<void>;
 }
 
 export interface DnsRegistry<T extends DnsRegistryContext> {

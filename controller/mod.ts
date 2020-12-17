@@ -1,8 +1,11 @@
 import { fixedInterval } from 'https://danopia.net/deno/fixed-interval@v1.ts';
 import * as TOML from 'https://deno.land/std@0.79.0/encoding/toml.ts';
 import {autoDetectClient} from "https://deno.land/x/kubernetes_client@v0.1.0/mod.ts";
+import {MuxAsyncIterator} from "https://deno.land/std@0.81.0/async/mux_async_iterator.ts";
+import {debounce} from "https://raw.githubusercontent.com/danopia/observables-with-streams/063d7c7e5d91e981036e5cdae44c1534e718fe97/src/transforms/debounce.ts";
+import {readableStreamFromAsyncIterator} from "https://deno.land/std@0.81.0/io/streams.ts";
 
-import { isControllerConfig } from "../common/config.ts";
+import { DnsSource, isControllerConfig } from "../common/mod.ts";
 import { Planner } from "./planner.ts";
 
 // TODO: consider dynamic imports for all these config-driven ones?
@@ -63,7 +66,39 @@ const p2 = '-->';
 const p1 = '==>';
 const p0 = '!!!';
 
-for await (const _ of fixedInterval((config.interval_seconds ?? 60) * 1000)) {
+const ticksMuxed = new MuxAsyncIterator<DnsSource | number>();
+ticksMuxed.add(fixedInterval((config.interval_seconds ?? 60) * 1000));
+
+// async function* debounce<T>(
+//   iter: AsyncIterable<T>,
+//   timeout: number,
+// ): AsyncGenerator<T> {
+//   let last = 0;
+//   for await (const val of iter) {
+//     const now = performance.now();
+//     if (now - last > timeout) {
+//       await new Promise(ok => setTimeout(ok, timeout));
+//       yield val;
+//     } else {
+//       console.log('-------spin---')
+//     }
+//     last = performance.now();
+//   }
+// }
+
+if (!Deno.args.includes('--once')) {
+  for (const source of sources) {
+    ticksMuxed.add(async function*() {
+      for await (const _ of source.AddEventHandler()) {
+        console.log(p3, 'Received poke from', source.config.type);
+        yield source;
+      }
+    }());
+  }
+}
+
+for await (const _ of readableStreamFromAsyncIterator(ticksMuxed.iterate())
+    .pipeThrough(debounce(1000))) {
   console.log();
   console.log('---', new Date());
 
