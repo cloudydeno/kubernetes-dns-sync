@@ -1,15 +1,12 @@
 import { CrdSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion } from "../common/mod.ts";
-import { Reflector } from "../common/streaming.ts";
-
-import { RestClient } from "https://deno.land/x/kubernetes_client@v0.1.0/mod.ts";
-// import { Reflector } from "https://deno.land/x/kubernetes_apis@v0.1.0/streaming.ts";
+import { KubernetesClient, Reflector } from '../deps.ts';
 import { ExternaldnsV1alpha1Api, DNSEndpointFields } from "https://uber.danopia.net/deno/gke-apis/externaldns.k8s.io@v1alpha1/mod.ts";
 
 export class CrdSource implements DnsSource {
 
   constructor(
     public config: CrdSourceConfig,
-    private client: RestClient,
+    private client: KubernetesClient,
   ) {}
   crdApi = new ExternaldnsV1alpha1Api(this.client);
   requiredAnnotations = Object.entries(this.config.annotation_filter ?? {});

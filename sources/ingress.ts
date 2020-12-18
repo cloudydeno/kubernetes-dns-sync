@@ -1,14 +1,12 @@
 import { IngressSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion } from "../common/mod.ts";
-import { Reflector } from "../common/streaming.ts";
-
-import { RestClient } from "https://deno.land/x/kubernetes_client@v0.1.0/mod.ts";
+import { KubernetesClient, Reflector } from '../deps.ts';
 import { NetworkingV1beta1Api, IngressFields } from "https://deno.land/x/kubernetes_apis@v0.1.0/builtin/networking.k8s.io@v1beta1/mod.ts";
 
 export class IngressSource implements DnsSource {
 
   constructor(
     public config: IngressSourceConfig,
-    private client: RestClient,
+    private client: KubernetesClient,
   ) {}
   networkingApi = new NetworkingV1beta1Api(this.client);
   requiredAnnotations = Object.entries(this.config.annotation_filter ?? {});

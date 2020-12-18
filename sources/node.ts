@@ -1,14 +1,12 @@
 import { NodeSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion } from "../common/mod.ts";
-import { Reflector } from "../common/streaming.ts";
-
-import { RestClient } from "https://deno.land/x/kubernetes_client@v0.1.0/mod.ts";
+import { KubernetesClient, Reflector } from '../deps.ts';
 import { CoreV1Api, NodeFields } from "https://deno.land/x/kubernetes_apis@v0.1.0/builtin/core@v1/mod.ts";
 
 export class NodeSource implements DnsSource {
 
   constructor(
     public config: NodeSourceConfig,
-    private client: RestClient,
+    private client: KubernetesClient,
   ) {}
   coreApi = new CoreV1Api(this.client);
   requiredAnnotations = Object.entries(this.config.annotation_filter ?? {});

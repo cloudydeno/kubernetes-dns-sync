@@ -1,9 +1,11 @@
-import { fixedInterval } from 'https://danopia.net/deno/fixed-interval@v1.ts';
-import * as TOML from 'https://deno.land/std@0.79.0/encoding/toml.ts';
-import {autoDetectClient} from "https://deno.land/x/kubernetes_client@v0.1.0/mod.ts";
-import {MuxAsyncIterator} from "https://deno.land/std@0.81.0/async/mux_async_iterator.ts";
-import {debounce} from "https://raw.githubusercontent.com/danopia/observables-with-streams/063d7c7e5d91e981036e5cdae44c1534e718fe97/src/transforms/debounce.ts";
-import {readableStreamFromAsyncIterator} from "https://deno.land/std@0.81.0/io/streams.ts";
+import {
+  fixedInterval,
+  TOML,
+  autoDetectKubernetesClient,
+  MuxAsyncIterator,
+  debounce,
+  readableStreamFromAsyncIterator,
+} from '../deps.ts';
 
 import { DnsSource, isControllerConfig } from "../common/mod.ts";
 import { Planner } from "./planner.ts";
@@ -20,7 +22,7 @@ import { VultrProvider } from '../providers/vultr/mod.ts';
 import { TxtRegistry } from "../registries/txt.ts";
 import { NoopRegistry } from "../registries/noop.ts";
 
-const kubernetesClient = await autoDetectClient();
+const kubernetesClient = await autoDetectKubernetesClient();
 
 const config = TOML.parse(await Deno.readTextFile('config.toml'));
 if (!isControllerConfig(config)) throw new Error(`config.toml was invalid`);
