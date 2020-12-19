@@ -22,6 +22,9 @@ export class VultrApi {
     if (resp.status == 204) {
       resp.text();
       return null;
+    } else if (resp.status >= 400) {
+      const text = await resp.text();
+      throw new Error(`Vultr HTTP ${resp.status} ${resp.statusText}: ${text}`);
     }
     return await resp.json();
   }
