@@ -1,108 +1,33 @@
 import {
   TOML,
-  autoDetectKubernetesClient,
-  // observables:
-  just, fromAsyncIterator, fromTimer,
-  map, merge, debounce,
 } from '../deps.ts';
 
-import { DnsSource, isControllerConfig } from "../common/mod.ts";
+import { isControllerConfig } from "../common/mod.ts";
 import { Planner } from "./planner.ts";
-
-// TODO: consider dynamic imports for all these config-driven imports?
-
-import { IngressSource } from '../sources/ingress.ts';
-import { CrdSource } from '../sources/crd.ts';
-import { NodeSource } from '../sources/node.ts';
-
-import { GoogleProvider } from '../providers/google/mod.ts';
-import { VultrProvider } from '../providers/vultr/mod.ts';
-
-import { TxtRegistry } from "../registries/txt.ts";
-import { NoopRegistry } from "../registries/noop.ts";
-
-const kubernetesClient = await autoDetectKubernetesClient();
+import * as configure from "./configure.ts";
+import { createTickStream } from "./ticks.ts";
 
 const config = TOML.parse(await Deno.readTextFile('config.toml'));
 if (!isControllerConfig(config)) throw new Error(`config.toml was invalid`);
 console.log('Parsed configuration:', JSON.stringify(config));
 
-const sources = config.source.map(source => {
-  switch (source.type) {
-    case 'ingress':
-      return new IngressSource(source, kubernetesClient);
-    case 'crd':
-      return new CrdSource(source, kubernetesClient);
-    case 'node':
-      return new NodeSource(source, kubernetesClient);
-    default:
-      throw new Error(`Invalid source 'type' ${(source as any).type}`);
-  }
-});
-
-const providers = config.provider.map(provider => {
-  switch (provider.type) {
-    case 'google':
-      return new GoogleProvider(provider);
-    case 'vultr':
-      return new VultrProvider(provider);
-    default:
-      throw new Error(`Invalid provider 'type' ${(provider as any).type}`);
-  }
-});
-
-const registry = [config.registry].map(registry => {
-  switch (registry.type) {
-    case 'txt':
-      return new TxtRegistry(registry);
-    case 'noop':
-      return new NoopRegistry(registry);
-    default:
-      throw new Error(`Invalid registry 'type' ${(registry as any).type}`);
-  }
-})[0];
+const sources = config.source.map(configure.source);
+const providers = config.provider.map(configure.provider);
+const registry = [config.registry].map(configure.registry)[0];
 
 const p3 = '   ';
 const p2 = '-->';
 const p1 = '==>';
 const p0 = '!!!';
 
-const tickStreams = new Array<ReadableStream<DnsSource | null>>();
-// Always start with one tick as startup
-tickStreams.push(just(null));
+// Main loop
+for await (const tickSource of createTickStream(config, sources)) {
+  console.log();
 
-if (Deno.args.includes('--once')) {
-  // Do nothing else after initial tick.
-
-} else if (config.enable_watching) {
-  // Subscribe to every source's events
-  for (const source of sources) {
-    tickStreams.push(fromAsyncIterator(source
-      .MakeEventSource())
-      .pipeThrough(map(x => source)));
-  }
-  // Also regular infrequent ticks just in case
-  const bgPollMillis = (config.interval_seconds ?? (60 * 60)) * 1000;
-  tickStreams.push(fromTimer(bgPollMillis)
-    .pipeThrough(map(() => null)));
-
-} else {
-  // Just plain regular ticks at a fixed interval
-  const bgPollMillis = (config.interval_seconds ?? 60) * 1000;
-  tickStreams.push(fromTimer(bgPollMillis)
-    .pipeThrough(map(() => null)));
-}
-
-// Merge every tick source and debounce
-const actionableTicks = merge(...tickStreams)
-  .pipeThrough(debounce((config.debounce_seconds ?? 2) * 1000));
-
-// Per each tick...
-for await (const tickSource of actionableTicks) {
+  // Log why we're here
   const tickReason = tickSource
     ? `via ${tickSource.config.type}`
     : 'via schedule';
-  console.log();
   console.log('---', new Date(), tickReason);
 
   console.log(p2, 'Loading desired records from', sources.length, 'sources...');
