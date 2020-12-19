@@ -63,7 +63,7 @@ export class CrdSource implements DnsSource {
     return endpoints;
   }
 
-  async* AddEventHandler(): AsyncGenerator<void> {
+  async* MakeEventSource(): AsyncGenerator<void> {
     if (!this.reflector) {
       this.reflector = new Reflector(
         opts => this.crdApi.getDNSEndpointListForAllNamespaces({ ...opts }),

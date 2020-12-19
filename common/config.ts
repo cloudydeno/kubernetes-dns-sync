@@ -1,5 +1,8 @@
 export interface ControllerConfig {
   interval_seconds?: number;
+  debounce_seconds?: number;
+  enable_watching?: boolean;
+
   source: SourceConfig[];
   provider: ProviderConfig[];
   registry: RegistryConfig;

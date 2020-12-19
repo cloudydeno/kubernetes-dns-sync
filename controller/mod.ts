@@ -1,16 +1,15 @@
 import {
-  fixedInterval,
   TOML,
   autoDetectKubernetesClient,
-  MuxAsyncIterator,
-  debounce,
-  readableStreamFromAsyncIterator,
+  // observables:
+  just, fromAsyncIterator, fromTimer,
+  map, merge, debounce,
 } from '../deps.ts';
 
 import { DnsSource, isControllerConfig } from "../common/mod.ts";
 import { Planner } from "./planner.ts";
 
-// TODO: consider dynamic imports for all these config-driven ones?
+// TODO: consider dynamic imports for all these config-driven imports?
 
 import { IngressSource } from '../sources/ingress.ts';
 import { CrdSource } from '../sources/crd.ts';
@@ -68,41 +67,43 @@ const p2 = '-->';
 const p1 = '==>';
 const p0 = '!!!';
 
-const ticksMuxed = new MuxAsyncIterator<DnsSource | number>();
-ticksMuxed.add(fixedInterval((config.interval_seconds ?? 60) * 1000));
+const tickStreams = new Array<ReadableStream<DnsSource | null>>();
+// Always start with one tick as startup
+tickStreams.push(just(null));
 
-// async function* debounce<T>(
-//   iter: AsyncIterable<T>,
-//   timeout: number,
-// ): AsyncGenerator<T> {
-//   let last = 0;
-//   for await (const val of iter) {
-//     const now = performance.now();
-//     if (now - last > timeout) {
-//       await new Promise(ok => setTimeout(ok, timeout));
-//       yield val;
-//     } else {
-//       console.log('-------spin---')
-//     }
-//     last = performance.now();
-//   }
-// }
+if (Deno.args.includes('--once')) {
+  // Do nothing else after initial tick.
 
-if (!Deno.args.includes('--once')) {
+} else if (config.enable_watching) {
+  // Subscribe to every source's events
   for (const source of sources) {
-    ticksMuxed.add(async function*() {
-      for await (const _ of source.AddEventHandler()) {
-        console.log(p3, 'Received poke from', source.config.type);
-        yield source;
-      }
-    }());
+    tickStreams.push(fromAsyncIterator(source
+      .MakeEventSource())
+      .pipeThrough(map(x => source)));
   }
+  // Also regular infrequent ticks just in case
+  const bgPollMillis = (config.interval_seconds ?? (60 * 60)) * 1000;
+  tickStreams.push(fromTimer(bgPollMillis)
+    .pipeThrough(map(() => null)));
+
+} else {
+  // Just plain regular ticks at a fixed interval
+  const bgPollMillis = (config.interval_seconds ?? 60) * 1000;
+  tickStreams.push(fromTimer(bgPollMillis)
+    .pipeThrough(map(() => null)));
 }
 
-for await (const _ of readableStreamFromAsyncIterator(ticksMuxed.iterate())
-    .pipeThrough(debounce(1000))) {
+// Merge every tick source and debounce
+const actionableTicks = merge(...tickStreams)
+  .pipeThrough(debounce((config.debounce_seconds ?? 2) * 1000));
+
+// Per each tick...
+for await (const tickSource of actionableTicks) {
+  const tickReason = tickSource
+    ? `via ${tickSource.config.type}`
+    : 'via schedule';
   console.log();
-  console.log('---', new Date());
+  console.log('---', new Date(), tickReason);
 
   console.log(p2, 'Loading desired records from', sources.length, 'sources...');
   const sourceRecords = await Promise.all(sources.map(async source => {
@@ -156,6 +157,6 @@ for await (const _ of readableStreamFromAsyncIterator(ticksMuxed.iterate())
     console.log(p2, 'Provider', providerId, 'is now up to date.');
   }
 
-  if (Deno.args.includes('--once')) break;
+  console.log();
 }
 console.log(p3, 'Process completed without error.');

@@ -9,10 +9,10 @@ export interface DnsProviderContext {
 
 // Source defines the interface Endpoint sources should implement.
 export interface DnsSource {
+	config: {type: string};
 	Endpoints(): Promise<Array<Endpoint>>;
-	// AddEventHandler adds an event handler that should be triggered if something in source changes
-	// AddEventHandler(cb: () => void): void;
-  AddEventHandler(): AsyncGenerator<void>;
+	// MakeEventSource adds an event handler that should be triggered if something in source changes
+  MakeEventSource(): AsyncGenerator<void>;
 }
 
 export interface DnsRegistry<T extends DnsRegistryContext> {

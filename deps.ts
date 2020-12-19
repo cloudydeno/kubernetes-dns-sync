@@ -1,11 +1,14 @@
-export { readableStreamFromAsyncIterator } from "https://deno.land/std@0.81.0/io/streams.ts";
-export { MuxAsyncIterator } from "https://deno.land/std@0.81.0/async/mux_async_iterator.ts";
+export {
+  readableStreamFromAsyncIterator as fromAsyncIterator,
+} from "https://deno.land/std@0.81.0/io/streams.ts";
 export * as TOML from 'https://deno.land/std@0.81.0/encoding/toml.ts';
 
-export { debounce } from "https://raw.githubusercontent.com/danopia/observables-with-streams/063d7c7e5d91e981036e5cdae44c1534e718fe97/src/transforms/debounce.ts";
-
-// TODO: replace with more observables!
-export { fixedInterval } from 'https://danopia.net/deno/fixed-interval@v1.ts';
+export { fromTimer } from "https://uber.danopia.net/deno/observables-with-streams@v1/sources/from-timer.ts";
+export { just } from "https://uber.danopia.net/deno/observables-with-streams@v1/sources/just.ts";
+export { merge } from "https://uber.danopia.net/deno/observables-with-streams@v1/combiners/merge.ts";
+// export { merge } from "/code/danopia/observables-with-streams/src/combiners/merge.ts";
+export { map } from "https://uber.danopia.net/deno/observables-with-streams@v1/transforms/map.ts";
+export { debounce } from "https://uber.danopia.net/deno/observables-with-streams@v1/transforms/debounce.ts";
 
 export type {
   RestClient as KubernetesClient,
