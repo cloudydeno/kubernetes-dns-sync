@@ -14,10 +14,12 @@ export function createTickStream(
   // Always start with one tick as startup
   tickStreams.push(just(null));
 
-  if (Deno.args.includes('--once')) {
-    // Do nothing else after initial tick.
+  if (Deno.args.includes('--once')) { // one run only
 
-  } else if (config.enable_watching) {
+    // Add nothing else
+    // Loop completes after initial tick.
+
+  } else if (config.enable_watching) { // Watch + interval
 
     // Subscribe to every source's events
     for (const source of sources) {
@@ -27,19 +29,23 @@ export function createTickStream(
     }
 
     // Also regular infrequent ticks just in case
-    const bgPollMillis = (config.interval_seconds ?? (60 * 60)) * 1000;
-    tickStreams.push(fromTimer(bgPollMillis)
-      .pipeThrough(map(() => null)));
+    tickStreams.push(makeTimer(config.interval_seconds ?? (60 * 60)));
 
-  } else {
+  } else { // interval only
 
     // Just plain regular ticks at a fixed interval
-    const bgPollMillis = (config.interval_seconds ?? 60) * 1000;
-    tickStreams.push(fromTimer(bgPollMillis)
-      .pipeThrough(map(() => null)));
+    tickStreams.push(makeTimer(config.interval_seconds ?? (1 * 60)));
+
   }
 
   // Merge every tick source and debounce
   return merge(...tickStreams)
     .pipeThrough(debounce((config.debounce_seconds ?? 2) * 1000));
 };
+
+
+function makeTimer(intervalSeconds: number) {
+  return fromTimer(intervalSeconds * 1000)
+      // kludge to match the type signature
+      .pipeThrough(map(() => null));
+}
