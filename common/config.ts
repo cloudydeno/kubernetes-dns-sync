@@ -48,6 +48,9 @@ export type SourceConfig =
 
 export interface GoogleProviderConfig {
   type: "google";
+  project_id?: string;
+  domain_filter?: string[];
+  zone_filter?: string[];
 }
 export interface VultrProviderConfig {
   type: "vultr";

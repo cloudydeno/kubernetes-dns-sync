@@ -27,6 +27,8 @@ export interface DnsRegistryContext {
 export interface Zone {
 	/** The hostname of the DNS zone */
 	DNSName: string;
+	/** The vanity name of the DNS zone, if any */
+	ZoneName?: string;
 	/** The provider's opaque ID for this zone. */
 	ZoneID: string;
 }
