@@ -1,0 +1,11 @@
+[[source]]
+type = "ingress"
+
+[[provider]]
+type = "google"
+zone_filter = [ "my-test-zone" ]
+
+[registry]
+type = "txt"
+txt_prefix = "_registry."
+txt_owner_id = "clusterid"

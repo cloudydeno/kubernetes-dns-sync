@@ -1,0 +1,25 @@
+[[source]]
+type = "crd"
+annotation_filter = { "\"kubernetes.io/ingress.class\"": "internet" }
+
+[[source]]
+type = "ingress"
+annotation_filter = { "\"kubernetes.io/ingress.class\"": "internet" }
+
+[[source]]
+type = "node"
+address_type = "ExternalIP"
+fqdn_template = "{{index .Labels \"kubernetes.io/hostname\"}}.nodes.example.com"
+
+[[provider]]
+type = "vultr"
+domain_filter = [ "example.com", "asdf.com" ]
+
+[[provider]]
+type = "google"
+zone_filter = [ "my-test-zone" ]
+
+[registry]
+type = "txt"
+txt_prefix = "_registry."
+txt_owner_id = "mycluster"

@@ -1,0 +1,37 @@
+# Where record data is coming from
+# If you add multiple, all the records are merged together
+[[source]]
+type = "ingress"
+# The TOML syntax for annotation filters is incorrect, and here's why:
+# ------
+# Deno's TOML parser is multiple kinds of wrong!
+# Inline should be this:
+# annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
+# ... but the parser tries reading as JSON.
+# Expanded should be this:
+#[provider.annotation_filter]
+#"kubernetes.io/ingress.class" = "nginx"
+# ... but the key just silently gets lost.
+# This is what actually works as of std@0.79:
+annotation_filter = { "\"kubernetes.io/ingress.class\"": "nginx" }
+ # also this comment is read as a key because it = "indented"
+
+# Where the records are synced to so users can access them
+# If you add multiple, they'll receive a copy of the full record list individually
+[[provider]]
+# vultr, google, etc
+type = "vultr"
+# Passlist of DNS zones to work with
+# Without a filter, every zone in the DNS account will be considered fair game
+domain_filter = [ "example.com" ]
+
+[registry]
+# Adds extra TXT records to your zone to determine what records are ours.
+# Without this, the sync process will delete every existing unmanaged record!
+type = "txt"
+# A prefix helps group actual records together in your DNS provider,
+# and also hides registry TXTs from your actual clients somewhat.
+# But if you're managing wildcards then having a prefix would be problematic.
+txt_prefix = "_registry."
+# Must be unique for every dns-sync or external-dns acting on any of your DNS providers!
+txt_owner_id = "cluster-id"
