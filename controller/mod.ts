@@ -73,7 +73,7 @@ for await (const tickSource of createTickStream(config, sources)) {
     if (Deno.args.includes('--dry-run')) {
       console.log(p1, "Doing no changes due to --dry-run");
     } else if (!Deno.args.includes('--yes')) {
-      if (prompt(`Proceed with editing provider records?`, 'yes') !== 'yes') throw new Error(
+      if (prompt(`    Proceed with editing provider records?`, 'yes') !== 'yes') throw new Error(
         `User declined to perform provider edits`);
     }
 

@@ -18,7 +18,7 @@ export class VultrApi {
       ...opts,
       headers,
     });
-    console.log(opts?.method ?? 'GET', 'vultr', path, resp.status);
+    console.error('   ', opts?.method ?? 'GET', 'vultr', path, resp.status);
     if (resp.status == 204) {
       resp.text();
       return null;
