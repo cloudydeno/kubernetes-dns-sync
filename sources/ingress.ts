@@ -30,6 +30,12 @@ export class IngressSource implements DnsSource {
         }
       }
 
+      const [ttl] = Object
+        .entries(node.metadata.annotations ?? {})
+        .flatMap(x => x[0] === 'external-dns.alpha.kubernetes.io/ttl'
+          ? [parseInt(x[1])]
+          : []);
+
       for (const rule of node.spec.rules) {
         if (!rule.host) continue;
         const hostnames = node.status.loadBalancer.ingress
@@ -42,6 +48,7 @@ export class IngressSource implements DnsSource {
             DNSName: rule.host,
             RecordType: 'CNAME',
             Targets: hostnames,
+            RecordTTL: ttl,
             Labels: {
               'external-dns/resource': `ingress/${node.metadata.namespace}/${node.metadata.name}`,
             },
@@ -52,6 +59,7 @@ export class IngressSource implements DnsSource {
             DNSName: rule.host,
             RecordType: 'A',
             Targets: addresses,
+            RecordTTL: ttl,
             Labels: {
               'external-dns/resource': `ingress/${node.metadata.namespace}/${node.metadata.name}`,
             },
