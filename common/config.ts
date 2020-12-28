@@ -35,6 +35,11 @@ export interface IngressSourceConfig extends SourceConfigBase {
 export interface CrdSourceConfig extends SourceConfigBase {
   type: "crd";
 }
+export interface AcmeCrdSourceConfig extends SourceConfigBase {
+  type: "acme-crd";
+  challenge_ttl?: number;
+  allow_wildcards?: boolean;
+}
 export interface NodeSourceConfig extends SourceConfigBase {
   type: "node";
   address_type: string;
@@ -43,6 +48,7 @@ export interface NodeSourceConfig extends SourceConfigBase {
 export type SourceConfig =
 | IngressSourceConfig
 | CrdSourceConfig
+| AcmeCrdSourceConfig
 | NodeSourceConfig
 ;
 

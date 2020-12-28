@@ -1,6 +1,6 @@
 import { CrdSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion } from "../common/mod.ts";
 import { KubernetesClient, Reflector } from '../deps.ts';
-import { ExternaldnsV1alpha1Api, DNSEndpointFields } from "https://uber.danopia.net/deno/gke-apis/externaldns.k8s.io@v1alpha1/mod.ts";
+import { ExternaldnsV1alpha1Api, DNSEndpoint } from "https://raw.githubusercontent.com/danopia/deno-kubernetes_apis/f542e66d229afd296c7af3820d254f8cd07d3c43/lib/external-dns/externaldns.k8s.io@v1alpha1/mod.ts";
 
 export class CrdSource implements DnsSource {
 
@@ -11,7 +11,7 @@ export class CrdSource implements DnsSource {
   crdApi = new ExternaldnsV1alpha1Api(this.client);
   requiredAnnotations = Object.entries(this.config.annotation_filter ?? {});
 
-  reflector?: Reflector<DNSEndpointFields>;
+  reflector?: Reflector<DNSEndpoint>;
   inSync = false;
 
   async Endpoints() {
@@ -57,6 +57,17 @@ export class CrdSource implements DnsSource {
         } else {
           endpoints.push(endpoint);
         }
+      }
+
+      // TODO: this shouldn't be done until we made the change
+      if (node.metadata.generation && node.status?.observedGeneration !== node.metadata.generation) {
+        node.status = {
+          observedGeneration: node.metadata.generation,
+        };
+
+        await this.crdApi
+          .namespace(node.metadata.namespace!)
+          .replaceDNSEndpointStatus(node.metadata.name!, node);
       }
 
     }
