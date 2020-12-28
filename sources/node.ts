@@ -87,8 +87,6 @@ export class NodeSource implements DnsSource {
             // TODO: annotations can also be relevant
             const beforeAddrs = JSON.stringify(evt.previous.status?.addresses);
             const afterAddrs = JSON.stringify(evt.object.status?.addresses);
-            console.log(beforeAddrs);
-            console.log(afterAddrs);
             if (beforeAddrs !== afterAddrs) yield;
           }
           break;
