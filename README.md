@@ -2,6 +2,69 @@
 
 ## Work In Progress!!
 
+## Sources
+
+### `ingress`
+
+The original. Furnishes DNS records for your `Ingress` resources.
+You'll probably want to set your ingress class as an Annotation Filter,
+especially if you have a split-horizon DNS configuration.
+
+```toml
+[[source]]
+type = "ingress"
+annotation_filter = { "\"kubernetes.io/ingress.class\"": "nginx" }
+```
+
+### `crd`
+
+Allows specifying highly custom records via the CRD from the `external-dns` project.
+
+```toml
+[[source]]
+type = "crd"
+```
+
+### `acme-crd`
+
+This source specifically targets cert-manager's v1 `Challenge` CRD.
+
+```toml
+[[source]]
+type = "acme-crd"
+challenge_ttl = 120
+allow_wildcards = true
+```
+
+To use, configure your issuer with this dummy webhook:
+
+```yaml
+    solvers:
+    - dns01:
+        webhook:
+          groupName: kubernetes-dns-sync
+          solverName: kubernetes-dns-sync
+```
+
+cert-manager won't like it but as long as kubernetes-dns-sync has correct permissions,
+the `Challenge` should get presented anyway and allow the `Order` to succeed.
+
+### `node`
+
+I'm using this source to give each Node an Internet name.
+This is essentially a Kubernetes-based Dynamic DNS arrangement.
+
+In theory you can also use this for round robins,
+but if you're hosting HTTP, the ingress source is probably what you want instead.
+
+```toml
+[[source]]
+type = "node"
+address_type = "ExternalIP"
+fqdn_template = "{{index .Labels \"kubernetes.io/hostname\"}}.pet.devmode.cloud"
+annotation_filter = { "\"kubernetes.io/node.class\"": "pet" }
+```
+
 ## Why?
 
 I tried using `external-dns` for more serious DNS management (records for a whole zone; such as managing apex records pointing to dual-stack CDNs) and ran into numerous issues:
