@@ -92,9 +92,17 @@ export class AcmeCrdSource implements DnsSource {
           this.inSync = false; // block runs during resync inconsistencies
           break;
         case 'ADDED':
-        case 'MODIFIED':
         case 'DELETED':
           if (this.inSync) yield;
+          break;
+        case 'MODIFIED':
+          if (this.inSync) {
+            // Only bother if the spec changes
+            // TODO: annotations can also be relevant
+            const beforeSpec = JSON.stringify(evt.previous.spec);
+            const afterSpec = JSON.stringify(evt.object.spec);
+            if (beforeSpec !== afterSpec) yield;
+          }
           break;
       }
     }
