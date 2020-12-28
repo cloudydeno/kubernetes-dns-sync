@@ -1,6 +1,6 @@
 import { IngressSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion } from "../common/mod.ts";
 import { KubernetesClient, Reflector } from '../deps.ts';
-import { NetworkingV1beta1Api, IngressFields } from "https://deno.land/x/kubernetes_apis@v0.1.0/builtin/networking.k8s.io@v1beta1/mod.ts";
+import { NetworkingV1beta1Api, Ingress } from "https://raw.githubusercontent.com/danopia/deno-kubernetes_apis/f542e66d229afd296c7af3820d254f8cd07d3c43/lib/builtin/networking.k8s.io@v1beta1/mod.ts";
 
 export class IngressSource implements DnsSource {
 
@@ -11,7 +11,7 @@ export class IngressSource implements DnsSource {
   networkingApi = new NetworkingV1beta1Api(this.client);
   requiredAnnotations = Object.entries(this.config.annotation_filter ?? {});
 
-  reflector?: Reflector<IngressFields>;
+  reflector?: Reflector<Ingress>;
   inSync = false;
 
   async Endpoints() {

@@ -1,6 +1,6 @@
 import { NodeSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion } from "../common/mod.ts";
 import { KubernetesClient, Reflector } from '../deps.ts';
-import { CoreV1Api, NodeFields } from "https://deno.land/x/kubernetes_apis@v0.1.0/builtin/core@v1/mod.ts";
+import { CoreV1Api, Node } from "https://raw.githubusercontent.com/danopia/deno-kubernetes_apis/f542e66d229afd296c7af3820d254f8cd07d3c43/lib/builtin/core@v1/mod.ts";
 
 export class NodeSource implements DnsSource {
 
@@ -11,7 +11,7 @@ export class NodeSource implements DnsSource {
   coreApi = new CoreV1Api(this.client);
   requiredAnnotations = Object.entries(this.config.annotation_filter ?? {});
 
-  reflector?: Reflector<NodeFields>;
+  reflector?: Reflector<Node>;
   inSync = false;
 
   async Endpoints() {

@@ -17,8 +17,8 @@ export {
   autoDetectClient as autoDetectKubernetesClient,
 } from "https://deno.land/x/kubernetes_client@v0.1.2/mod.ts";
 
-// TODO: upstream the changes
-export { Reflector } from "./common/streaming.ts";
-// export { Reflector } from "https://deno.land/x/kubernetes_apis@v0.1.0/streaming.ts";
+import { Status } from "https://raw.githubusercontent.com/danopia/deno-kubernetes_apis/f542e66d229afd296c7af3820d254f8cd07d3c43/lib/builtin/meta@v1/structs.ts";
+import { Reflector as GenericReflector } from "https://deno.land/x/kubernetes_client@v0.1.2/mod.ts";
+export class Reflector<T> extends GenericReflector<T, Status> {}
 
 // also, things using kubernetes import their necesary API surfaces directly
