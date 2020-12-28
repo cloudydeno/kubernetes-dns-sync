@@ -1,4 +1,4 @@
-FROM hayd/alpine-deno
+FROM hayd/alpine-deno:1.6.1
 
 WORKDIR /src/kubernetes-dns-sync
 ADD . ./
