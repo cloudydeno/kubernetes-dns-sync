@@ -12,10 +12,10 @@ export { debounce } from "https://uber.danopia.net/deno/observables-with-streams
 
 export type {
   RestClient as KubernetesClient,
-} from "https://deno.land/x/kubernetes_client@v0.1.0/mod.ts";
+} from "https://deno.land/x/kubernetes_client@v0.1.2/mod.ts";
 export {
   autoDetectClient as autoDetectKubernetesClient,
-} from "https://deno.land/x/kubernetes_client@v0.1.0/mod.ts";
+} from "https://deno.land/x/kubernetes_client@v0.1.2/mod.ts";
 
 // TODO: upstream the changes
 export { Reflector } from "./common/streaming.ts";
