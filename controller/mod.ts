@@ -61,13 +61,39 @@ for await (const tickSource of createTickStream(config, sources)) {
     }
 
     for (const rec of rawChanges.Create) {
-      console.log(p2, '- Create:', rec.RecordType, rec.DNSName, rec.Targets);
+      if (rec.RecordType === 'TXT') { // long records
+        console.log(p2, '- Create:', rec.RecordType, rec.DNSName);
+        for (const targetVal of rec.Targets) {
+          console.log(p3, '    new:', targetVal);
+        }
+      } else {
+        console.log(p2, '- Create:', rec.RecordType, rec.DNSName, rec.Targets);
+      }
     }
+
     for (const [recOld, recNew] of rawChanges.Update) {
-      console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName, recOld.Targets, '->', recNew.Targets);
+      if (recOld.RecordType === 'TXT') { // long records
+        console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName);
+        for (const targetVal of recOld.Targets) {
+          console.log(p3, '    old:', targetVal);
+        }
+        for (const targetVal of recNew.Targets) {
+          console.log(p3, '    new:', targetVal);
+        }
+      } else {
+        console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName, recOld.Targets, '->', recNew.Targets);
+      }
     }
+
     for (const rec of rawChanges.Delete) {
-      console.log(p2, '- Delete:', rec.RecordType, rec.DNSName, rec.Targets);
+      if (rec.RecordType === 'TXT') { // long records
+        console.log(p2, '- Delete:', rec.RecordType, rec.DNSName);
+        for (const targetVal of rec.Targets) {
+          console.log(p3, '    old:', targetVal);
+        }
+      } else {
+        console.log(p2, '- Delete:', rec.RecordType, rec.DNSName, rec.Targets);
+      }
     }
 
     if (Deno.args.includes('--dry-run')) {
