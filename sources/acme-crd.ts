@@ -1,6 +1,6 @@
 import { AcmeCrdSourceConfig, DnsSource, Endpoint, SplitOutTarget } from "../common/mod.ts";
 import { KubernetesClient, Reflector } from '../deps.ts';
-import { AcmeCertManagerIoV1Api, Challenge } from "https://raw.githubusercontent.com/danopia/deno-kubernetes_apis/f542e66d229afd296c7af3820d254f8cd07d3c43/lib/cert-manager/acme.cert-manager.io%40v1/mod.ts";
+import { AcmeCertManagerIoV1Api, Challenge } from "https://deno.land/x/kubernetes_apis@v0.2.0/cert-manager/acme.cert-manager.io%40v1/mod.ts";
 
 /**
  * Special source built specifically for cert-manager's ACME CRDs.
