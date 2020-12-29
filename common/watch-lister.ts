@@ -1,5 +1,5 @@
 import { Status, ObjectMeta } from "https://deno.land/x/kubernetes_apis@v0.2.0/builtin/meta@v1/structs.ts";
-import { Reflector, WatchEvent } from "https://deno.land/x/kubernetes_client@v0.1.2/mod.ts";
+import { Reflector, WatchEvent } from "https://deno.land/x/kubernetes_client@v0.1.3/mod.ts";
 
 type ListOf<T> = { metadata: { resourceVersion?: string | null }; items: Array<T> };
 
