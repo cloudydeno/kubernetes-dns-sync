@@ -1,6 +1,6 @@
-import { NodeSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion } from "../common/mod.ts";
-import { KubernetesClient, Reflector } from '../deps.ts';
-import { CoreV1Api, Node } from "https://deno.land/x/kubernetes_apis@v0.2.0/builtin/core@v1/mod.ts";
+import { NodeSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion, WatchLister } from "../common/mod.ts";
+import { KubernetesClient } from '../deps.ts';
+import { CoreV1Api } from "https://deno.land/x/kubernetes_apis@v0.2.0/builtin/core@v1/mod.ts";
 
 export class NodeSource implements DnsSource {
 
@@ -9,26 +9,17 @@ export class NodeSource implements DnsSource {
     private client: KubernetesClient,
   ) {}
   coreApi = new CoreV1Api(this.client);
-  requiredAnnotations = Object.entries(this.config.annotation_filter ?? {});
 
-  reflector?: Reflector<Node>;
-  inSync = false;
+  watchLister = new WatchLister('Node',
+    opts => this.coreApi.getNodeList({ ...opts }),
+    opts => this.coreApi.watchNodeList({ ...opts }),
+    node => [node.status?.addresses]); // TODO: also annotations (but only the ones we watch!)
 
   async Endpoints() {
     const endpoints = new Array<Endpoint>();
 
-    const resources = (this.inSync ? this.reflector?.listCached() : null)
-      ?? (await this.coreApi.getNodeList()).items;
-
-    nodes: for (const node of resources) {
-      if (!node.metadata || !node.status?.addresses) continue nodes;
-
-      if (this.requiredAnnotations.length > 0) {
-        if (!node.metadata.annotations) continue nodes;
-        for (const [key, val] of this.requiredAnnotations) {
-          if (node.metadata.annotations[key] !== val) continue nodes;
-        }
-      }
+    for await (const node of this.watchLister.getFreshList(this.config.annotation_filter)) {
+      if (!node.metadata || !node.status?.addresses) continue;
 
       // TODO: this is a terrible kludge, I just want to keep some parity with Go to start
       const fqdn = this.config.fqdn_template.replace(/{{[^}]+}}/g, tag => {
@@ -56,43 +47,8 @@ export class NodeSource implements DnsSource {
     return endpoints;
   }
 
-  async* MakeEventSource(): AsyncGenerator<void> {
-    if (!this.reflector) {
-      this.reflector = new Reflector(
-        opts => this.coreApi.getNodeList({ ...opts }),
-        opts => this.coreApi.watchNodeList({ ...opts }));
-      this.reflector.run(); // kinda just toss this away...
-    } else {
-      console.log(`WARN: Adding another event handler to existing reflector`);
-    }
-
-    console.log('observing Nodes...');
-    this.inSync = false;
-    for await (const evt of this.reflector.observeAll()) {
-      switch (evt.type) {
-        case 'SYNCED':
-          yield; // always
-          this.inSync = true; // start allowing falling-edge runs
-          break;
-        case 'DESYNCED':
-          this.inSync = false; // block runs during resync inconsistencies
-          break;
-        case 'ADDED':
-        case 'DELETED':
-          if (this.inSync) yield;
-          break;
-        case 'MODIFIED':
-          if (this.inSync) {
-            // Only bother if the node addresses change
-            // TODO: annotations can also be relevant
-            const beforeAddrs = JSON.stringify(evt.previous.status?.addresses);
-            const afterAddrs = JSON.stringify(evt.object.status?.addresses);
-            if (beforeAddrs !== afterAddrs) yield;
-          }
-          break;
-      }
-    }
-    console.log('Node observer done');
+  MakeEventSource() {
+    return this.watchLister.getEventSource();
   }
 
 }

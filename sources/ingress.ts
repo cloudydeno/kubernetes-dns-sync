@@ -1,6 +1,6 @@
-import { IngressSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion } from "../common/mod.ts";
-import { KubernetesClient, Reflector } from '../deps.ts';
-import { NetworkingV1beta1Api, Ingress } from "https://deno.land/x/kubernetes_apis@v0.2.0/builtin/networking.k8s.io@v1beta1/mod.ts";
+import { IngressSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion, WatchLister } from "../common/mod.ts";
+import { KubernetesClient } from '../deps.ts';
+import { NetworkingV1beta1Api } from "https://deno.land/x/kubernetes_apis@v0.2.0/builtin/networking.k8s.io@v1beta1/mod.ts";
 
 export class IngressSource implements DnsSource {
 
@@ -9,26 +9,16 @@ export class IngressSource implements DnsSource {
     private client: KubernetesClient,
   ) {}
   networkingApi = new NetworkingV1beta1Api(this.client);
-  requiredAnnotations = Object.entries(this.config.annotation_filter ?? {});
 
-  reflector?: Reflector<Ingress>;
-  inSync = false;
+  watchLister = new WatchLister('Ingress',
+    opts => this.networkingApi.getIngressListForAllNamespaces({ ...opts }),
+    opts => this.networkingApi.watchIngressListForAllNamespaces({ ...opts }));
 
   async Endpoints() {
     const endpoints = new Array<Endpoint>();
 
-    const resources = (this.inSync ? this.reflector?.listCached() : null)
-      ?? (await this.networkingApi.getIngressListForAllNamespaces()).items;
-
-    ings: for (const node of resources) {
-      if (!node.metadata || !node.spec?.rules || !node.status?.loadBalancer?.ingress) continue ings;
-
-      if (this.requiredAnnotations.length > 0) {
-        if (!node.metadata.annotations) continue ings;
-        for (const [key, val] of this.requiredAnnotations) {
-          if (node.metadata.annotations[key] !== val) continue ings;
-        }
-      }
+    for await (const node of this.watchLister.getFreshList(this.config.annotation_filter)) {
+      if (!node.metadata || !node.spec?.rules || !node.status?.loadBalancer?.ingress) continue;
 
       const [ttl] = Object
         .entries(node.metadata.annotations ?? {})
@@ -72,35 +62,8 @@ export class IngressSource implements DnsSource {
     return endpoints;
   }
 
-  async* MakeEventSource(): AsyncGenerator<void> {
-    if (!this.reflector) {
-      this.reflector = new Reflector(
-        opts => this.networkingApi.getIngressListForAllNamespaces({ ...opts }),
-        opts => this.networkingApi.watchIngressListForAllNamespaces({ ...opts }));
-      this.reflector.run(); // kinda just toss this away...
-    } else {
-      console.log(`WARN: Adding another event handler to existing reflector`);
-    }
-
-    console.log('observing Ingresses...');
-    this.inSync = false;
-    for await (const evt of this.reflector.observeAll()) {
-      switch (evt.type) {
-        case 'SYNCED':
-          yield;
-          this.inSync = true; // start allowing falling-edge runs
-          break;
-        case 'DESYNCED':
-          this.inSync = false; // block runs during resync inconsistencies
-          break;
-        case 'ADDED':
-        case 'MODIFIED':
-        case 'DELETED':
-          if (this.inSync) yield;
-          break;
-      }
-    }
-    console.log('Ingress observer done');
+  MakeEventSource() {
+    return this.watchLister.getEventSource();
   }
 
 }

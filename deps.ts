@@ -16,9 +16,3 @@ export type {
 export {
   autoDetectClient as autoDetectKubernetesClient,
 } from "https://deno.land/x/kubernetes_client@v0.1.2/mod.ts";
-
-import { Status } from "https://deno.land/x/kubernetes_apis@v0.2.0/builtin/meta@v1/structs.ts";
-import { Reflector as GenericReflector } from "https://deno.land/x/kubernetes_client@v0.1.2/mod.ts";
-export class Reflector<T> extends GenericReflector<T, Status> {}
-
-// also, things using kubernetes import their necesary API surfaces directly
