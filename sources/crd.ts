@@ -19,7 +19,7 @@ export class CrdSource implements DnsSource {
     const endpoints = new Array<Endpoint>();
 
     for await (const node of this.watchLister.getFreshList(this.config.annotation_filter)) {
-      if (!node.metadata || !node.spec?.endpoints) continue;
+      if (!node.metadata?.name || !node.metadata?.namespace || !node.spec?.endpoints) continue;
 
       for (const rule of node.spec.endpoints) {
         if (!rule.dnsName || !rule.recordType || !rule.targets?.length) continue;
@@ -50,15 +50,15 @@ export class CrdSource implements DnsSource {
         }
       }
 
-      // TODO: this shouldn't be done until we made the change
+      // mark in status subresource that we saw the record
+      // TODO: this probably shouldn't be done until we made the change
       if (node.metadata.generation && node.status?.observedGeneration !== node.metadata.generation) {
-        node.status = {
-          observedGeneration: node.metadata.generation,
-        };
-
         await this.crdApi
-          .namespace(node.metadata.namespace!)
-          .replaceDNSEndpointStatus(node.metadata.name!, node);
+          .namespace(node.metadata.namespace)
+          .patchDNSEndpointStatus(node.metadata.name, 'json-merge', {
+            status: {
+              observedGeneration: node.metadata.generation,
+            }}).catch(err => console.warn('Failed to observe DNSEndpoint CRD:', err.message));
       }
 
     }
