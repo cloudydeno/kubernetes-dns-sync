@@ -66,11 +66,11 @@ export interface ServiceAccountCredential {
   "private_key": string;
   "client_email": string;
   "client_id": string;
+  "client_x509_cert_url": string;
 
   "auth_uri": "https://accounts.google.com/o/oauth2/auth";
   "token_uri": "https://oauth2.googleapis.com/token";
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs";
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firestore-maintenance%40stardust-skychat.iam.gserviceaccount.com";
 };
 
 export interface TokenResponse {
