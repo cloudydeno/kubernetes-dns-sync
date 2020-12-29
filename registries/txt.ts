@@ -27,10 +27,11 @@ class TxtRegistryContext implements DnsRegistryContext {
   constructor(private registry: TxtRegistry) {}
   heritageRecords = new Map<string, Endpoint>();
   unusedNames = new Set<string>();
+  nameLabelsMap = new Map<string, Record<string, string>>();
 
   RecognizeLabels(raw: Endpoint[]): Promise<Endpoint[]> {
     const byNameMap = new Map<string, Endpoint[]>();
-    const nameLabelsMap = new Map<string, Record<string, string>>();
+    this.nameLabelsMap = new Map<string, Record<string, string>>();
     for (let recordset of raw) {
       if (recordset.RecordType === 'TXT') {
         const heritageValue = recordset.Targets.find(x => x.startsWith(`heritage=`));
@@ -41,7 +42,7 @@ class TxtRegistryContext implements DnsRegistryContext {
             labels['heritage'] === 'external-dns'
             && labels['external-dns/owner'] === this.registry.ownerId
           ) ? 'yes' : '';
-          nameLabelsMap.set(recordset.DNSName.slice(this.registry.recordPrefix.length), labels);
+          this.nameLabelsMap.set(recordset.DNSName.slice(this.registry.recordPrefix.length), labels);
 
           if (recordset.Targets.length === 1) {
             this.heritageRecords.set(recordset.DNSName, recordset);
@@ -62,8 +63,8 @@ class TxtRegistryContext implements DnsRegistryContext {
       }
     }
 
-    this.unusedNames = new Set<string>(nameLabelsMap.keys());
-    for (const [name, labels] of nameLabelsMap) {
+    this.unusedNames = new Set<string>(this.nameLabelsMap.keys());
+    for (const [name, labels] of this.nameLabelsMap) {
       for (const rec of byNameMap.get(name) ?? []) {
         const hasTypes = Object.keys(labels).some(x => x.startsWith('record-type/'));
         if (!hasTypes || labels[`record-type/${rec.RecordType}`]) {
@@ -76,67 +77,99 @@ class TxtRegistryContext implements DnsRegistryContext {
   }
 
   CommitLabels(changes: Changes): Promise<Changes> {
-    const deletedTxts = new Set<string>();
-    const createdTxtLabels = new Map<string,Record<string,string>>();
+    // const deletedTxts = new Set<string>();
+    const newTxtLabels = new Map<string,Record<string,string>>();
     const realChanges = new Changes(changes.sourceRecords,
       new Array<Endpoint>().concat(
         changes.existingRecords,
         Array.from(this.heritageRecords.values())));
 
-    // if (changes.Delete.length >= 1 && changes.Create.length === 0 && changes.Update.length === 0) {
-
-      // copy over all deletes, and also their heritage, only once
-      for (const deleted of changes.Delete) {
-        realChanges.Delete.push(deleted);
-        const txtName = this.registry.recordPrefix + deleted.DNSName;
-        if (!deletedTxts.has(txtName)) {
-          const heritage = this.heritageRecords.get(txtName);
-          if (!heritage) throw new Error(`BUG: didn't find heritage record ${txtName}`);
-          realChanges.Delete.push(heritage);
-          deletedTxts.add(txtName);
+    const grabNewTxtLabels = (recordName: string) => {
+      const txtName = this.registry.recordPrefix + recordName;
+      // if we're already planning something, roll with it
+      let existingLabels = newTxtLabels.get(txtName);
+      // if not but the TXT did exist, start a mutation
+      if (!existingLabels) {
+        const prevLabels = this.nameLabelsMap.get(recordName);
+        if (prevLabels) {
+          existingLabels = {...prevLabels};
+          newTxtLabels.set(txtName, existingLabels);
         }
       }
-
-      // copy over all creates, and also their heritage, only once
-      for (const created of changes.Create) {
-        realChanges.Create.push(created);
-        const txtName = this.registry.recordPrefix + created.DNSName;
-        const existingHeritage = this.heritageRecords.get(txtName);
-        if (existingHeritage) {
-          console.log(created, existingHeritage);
-          throw new Error(`TODO: record creations with existing heritage for ${txtName}`);
-        }
-
-        let existingLabels = createdTxtLabels.get(txtName);
-        if (!existingLabels) {
-          existingLabels = {
-            'heritage': 'external-dns',
-            'external-dns/owner': this.registry.ownerId,
-            ...created.Labels,
-          };
-          createdTxtLabels.set(txtName, existingLabels);
-        } // TODO: if multiple sources, clean up the more specific labels
-        existingLabels['record-type/'+created.RecordType] = 'managed';
+      // if still not, start a blank new record
+      if (!existingLabels) {
+        existingLabels = {
+          'heritage': 'external-dns',
+          'external-dns/owner': this.registry.ownerId,
+        };
+        newTxtLabels.set(txtName, existingLabels);
       }
+      return existingLabels;
+    }
 
-      for (const [name, labels] of createdTxtLabels) {
-        realChanges.Create.push({
-          DNSName: name,
-          RecordType: 'TXT',
-          Targets: [Object.entries(labels).map(x => x.join('=')).join(',')],
-          SplitOutTarget,
-        });
+    // copy over all creates, and also their heritage, only once
+    for (const created of changes.Create) {
+      realChanges.Create.push(created);
+
+      // if we already owned it, continue owning it for sure
+      this.unusedNames.delete(created.DNSName);
+
+      const desiredLabels = grabNewTxtLabels(created.DNSName);
+      desiredLabels[`record-type/${created.RecordType}`] = 'managed';
+
+      // TODO: if multiple sources, clean up the more specific labels
+      for (const [key, val] of Object.entries(created.Labels ?? {})) {
+        desiredLabels[key] = val;
       }
+    }
 
     for (const [before, after] of changes.Update) {
-      console.log('!!! WARNING: TXT provider is assuming that', before.DNSName, 'change requires no TXT changes');
       realChanges.Update.push([before, after]);
-      // console.log(this, changes.Create, changes.Update, changes.Delete);
+
+      const desiredLabels = grabNewTxtLabels(after.DNSName);
+      desiredLabels[`record-type/${after.RecordType}`] = 'managed';
+
+      // TODO: if multiple sources, clean up the more specific labels
+      for (const [key, val] of Object.entries(after.Labels ?? {})) {
+        desiredLabels[key] = val;
+      }
     }
 
-    for (const create of changes.Create) {
-      this.unusedNames.delete(create.DNSName);
+    // copy over all deletes, and also their heritage, only once
+    for (const deleted of changes.Delete) {
+      realChanges.Delete.push(deleted);
+
+      // TODO: only deleting one priority of an MX would break this!
+      delete grabNewTxtLabels(deleted.DNSName)[`record-type/${deleted.RecordType}`];
     }
+
+
+    for (const [txtName, labels] of newTxtLabels) {
+      const hasTypes = Object.keys(labels).some(x => x.startsWith('record-type/'));
+      delete labels['is-ours'];
+
+      const existingEndpoint = this.heritageRecords.get(txtName);
+      const newEndpoint: Endpoint | null = hasTypes ? {
+        DNSName: txtName,
+        RecordType: 'TXT',
+        Targets: [Object.entries(labels).map(x => x.join('=')).join(',')],
+        SplitOutTarget,
+      } : null;
+      // console.log(existingEndpoint, newEndpoint)
+
+      if (existingEndpoint?.Targets[0] === newEndpoint?.Targets[0]) {
+        // No changes to TXT record.
+      } else if (existingEndpoint) {
+        if (newEndpoint) {
+          realChanges.Update.push([existingEndpoint, newEndpoint]);
+        } else {
+          realChanges.Delete.push(existingEndpoint);
+        }
+      } else if (newEndpoint) {
+        realChanges.Create.push(newEndpoint);
+      }
+    }
+
     for (const unusedName of this.unusedNames) {
       const txtName = this.registry.recordPrefix + unusedName;
       const heritage = this.heritageRecords.get(txtName);
