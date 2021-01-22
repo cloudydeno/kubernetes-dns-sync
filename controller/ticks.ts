@@ -1,9 +1,17 @@
-import {
-  just, fromAsyncIterator, fromTimer,
-  map, merge, debounce,
-} from '../deps.ts';
-
+import { ows } from '../deps.ts';
 import { DnsSource, ControllerConfig } from "../common/mod.ts";
+
+/**
+ * Builds a stream of one or more 'ticks', which are events that
+ * result in the controller performing a fresh reconsile loop.
+ * If "--once" was passed in, this stream closes after a single tick.
+ * Otherwise it's an infinite stream either from a fast timer interval
+ * or, if enabled, from watch events plus a slow timer.
+ * Tick values are either null, or the source that caused them via event.
+ * @todo consider if watching should be the default behavior.
+ * @param config Controller configuration, drives timing + watching
+ * @param sources List of record sources to watch if enabled
+ */
 
 export function createTickStream(
   config: ControllerConfig,
@@ -12,7 +20,7 @@ export function createTickStream(
   const tickStreams = new Array<ReadableStream<DnsSource | null>>();
 
   // Always start with one tick as startup
-  tickStreams.push(just(null));
+  tickStreams.push(ows.just(null));
 
   if (Deno.args.includes('--once')) { // one run only
 
@@ -23,9 +31,9 @@ export function createTickStream(
 
     // Subscribe to every source's events
     for (const source of sources) {
-      tickStreams.push(fromAsyncIterator(source
+      tickStreams.push(ows.fromAsyncIterator(source
         .MakeEventSource())
-        .pipeThrough(map(x => source)));
+        .pipeThrough(ows.map(x => source)));
     }
 
     // Also regular infrequent ticks just in case
@@ -39,13 +47,13 @@ export function createTickStream(
   }
 
   // Merge every tick source and debounce
-  return merge(...tickStreams)
-    .pipeThrough(debounce((config.debounce_seconds ?? 2) * 1000));
+  return ows.merge(...tickStreams)
+    .pipeThrough(ows.debounce((config.debounce_seconds ?? 2) * 1000));
 };
 
 
 function makeTimer(intervalSeconds: number) {
-  return fromTimer(intervalSeconds * 1000)
+  return ows.fromTimer(intervalSeconds * 1000)
       // kludge to match the type signature
-      .pipeThrough(map(() => null));
+      .pipeThrough(ows.map(() => null));
 }
