@@ -1,6 +1,12 @@
 import { ows } from '../deps.ts';
 import { DnsSource, ControllerConfig } from "../common/mod.ts";
 
+const pipeOpts: PipeOptions = {
+  preventAbort: false,
+  preventCancel: false,
+  preventClose: false,
+};
+
 /**
  * Builds a stream of one or more 'ticks', which are events that
  * result in the controller performing a fresh reconsile loop.
@@ -33,7 +39,7 @@ export function createTickStream(
     for (const source of sources) {
       tickStreams.push(ows.fromAsyncIterator(source
         .MakeEventSource())
-        .pipeThrough(ows.map(x => source)));
+        .pipeThrough(ows.map(x => source), pipeOpts));
     }
 
     // Also regular infrequent ticks just in case
@@ -48,12 +54,12 @@ export function createTickStream(
 
   // Merge every tick source and debounce
   return ows.merge(...tickStreams)
-    .pipeThrough(ows.debounce((config.debounce_seconds ?? 2) * 1000));
+    .pipeThrough(ows.debounce((config.debounce_seconds ?? 2) * 1000), pipeOpts);
 };
 
 
 function makeTimer(intervalSeconds: number) {
   return ows.fromTimer(intervalSeconds * 1000)
       // kludge to match the type signature
-      .pipeThrough(ows.map(() => null));
+      .pipeThrough(ows.map(() => null), pipeOpts);
 }
