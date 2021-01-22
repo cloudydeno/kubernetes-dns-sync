@@ -11,6 +11,13 @@ export {
   ServiceAccount,
 } from "https://cloudydeno.github.io/deno-bitesized/integrations/google-service-account@v2.ts";
 
+export {
+  runMetricsServer,
+} from "https://raw.githubusercontent.com/cloudydeno/deno-openmetrics_exporter/84cc967c7e9a3ed85f401435d3747fd221c9c233/mod.ts";
+export {
+  replaceGlobalFetch,
+} from "https://raw.githubusercontent.com/cloudydeno/deno-openmetrics_exporter/84cc967c7e9a3ed85f401435d3747fd221c9c233/lib/instrumented/fetch.ts";
+
 //------------
 // assemble a customized observables-with-streams export
 

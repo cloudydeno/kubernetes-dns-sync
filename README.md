@@ -2,6 +2,15 @@
 
 ## Work In Progress!!
 
+For rationale of creating my own external-dns-like project see the end of this README.
+
+## Options
+
+* `--dry-run`: don't actually make any changes, only print them
+* `--yes`: commit changes to DNS provider APIs without asking
+* `--once`: one run only, exits when done
+* `--serve-metrics`: start an OpenMetrics/Prometheus server on port 9090
+
 ## Sources
 
 ### `ingress`

@@ -1,5 +1,7 @@
 import {
   TOML,
+  runMetricsServer,
+  replaceGlobalFetch,
 } from '../deps.ts';
 
 import { isControllerConfig } from "../common/mod.ts";
@@ -19,6 +21,12 @@ const p3 = '   ';
 const p2 = '-->';
 const p1 = '==>';
 const p0 = '!!!';
+
+if (Deno.args.includes('--serve-metrics')) {
+  replaceGlobalFetch();
+  runMetricsServer({ port: 9090 });
+  console.log(p2, "Now serving OpenMetrics @ :9090/metrics");
+}
 
 // Main loop
 for await (const tickSource of createTickStream(config, sources)) {
