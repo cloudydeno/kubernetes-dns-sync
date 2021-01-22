@@ -1,11 +1,11 @@
-import { ServiceAccount } from "./api-auth.ts";
+import { ServiceAccount } from "../../deps.ts";
 
 export class GoogleCloudDnsApi {
 
   constructor(accessMode: 'readwrite' | 'readonly', noRefresh: boolean) {
     const credPath = Deno.env.get('GOOGLE_APPLICATION_CREDENTIALS');
     if (!credPath) throw new Error(`GOOGLE_APPLICATION_CREDENTIALS is required to use Google`);
-    this.#svcAccount = ServiceAccount.readFromFile(credPath);
+    this.#svcAccount = ServiceAccount.readFromFileSync(credPath);
     this.accessScope = `https://www.googleapis.com/auth/ndev.clouddns.${accessMode}`;
     this.noRefresh = noRefresh;
   }
@@ -104,26 +104,6 @@ export class GoogleCloudDnsApi {
     if (!changeId) throw new Error(`Change is required`);
     return this._doHttp(`projects/${projectId}/managedZones/${zoneId}/changes/${changeId}`);
   }
-
-//   async updateRecord(zone: string, recordId: string, changes: Partial<Omit<DnsRecordData, "type">>): Promise<void> {
-//     if (!zone) throw new Error(`Zone is required`);
-//     if (!recordId) throw new Error(`Record ID is required`);
-//     if (!changes) throw new Error(`Record changes are required`);
-//     await this._doHttp(`/v2/domains/${zone}/records/${recordId}`, {
-//       method: 'PATCH',
-//       body: JSON.stringify(changes),
-//       headers: {
-//         'content-type': 'application/json',
-//       }});
-//   }
-
-//   async deleteRecord(zone: string, recordId: string): Promise<void> {
-//     if (!zone) throw new Error(`Zone is required`);
-//     if (!recordId) throw new Error(`Record ID is required`);
-//     await this._doHttp(`/v2/domains/${zone}/records/${recordId}`, {
-//       method: 'DELETE',
-//     });
-//   }
 }
 
 

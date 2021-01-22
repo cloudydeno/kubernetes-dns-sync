@@ -7,6 +7,10 @@ export {
   autoDetectClient as autoDetectKubernetesClient,
 } from "https://deno.land/x/kubernetes_client@v0.1.3/mod.ts";
 
+export {
+  ServiceAccount,
+} from "https://cloudydeno.github.io/deno-bitesized/integrations/google-service-account@v2.ts";
+
 //------------
 // assemble a customized observables-with-streams export
 

@@ -23,12 +23,6 @@ import { NoopRegistry } from "../registries/noop.ts";
 
 const kubernetesClient = await autoDetectKubernetesClient();
 
-// This might be useful for local dev instead of KubectlRaw, which cannot update /status subresources
-// import {KubeConfigRestClient, readKubeConfig} from "https://deno.land/x/kubernetes_client@v0.1.3/transports/unstable/via-kubeconfig.ts";
-// const kubeConfig = await readKubeConfig();
-// kubeConfig.fetchCurrentContext().cluster.server = 'http://localhost:8001';
-// const kubernetesClient = new KubeConfigRestClient(kubeConfig, Deno.createHttpClient({}));
-
 export function source(source: SourceConfig) {
   switch (source.type) {
     case 'ingress':
