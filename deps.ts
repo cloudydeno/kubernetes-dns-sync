@@ -13,10 +13,10 @@ export {
 
 export {
   runMetricsServer,
-} from "https://raw.githubusercontent.com/cloudydeno/deno-openmetrics_exporter/84cc967c7e9a3ed85f401435d3747fd221c9c233/mod.ts";
+} from "https://raw.githubusercontent.com/cloudydeno/deno-openmetrics_exporter/6f2c5094992718204395cff2708d350fc8076148/mod.ts";
 export {
   replaceGlobalFetch,
-} from "https://raw.githubusercontent.com/cloudydeno/deno-openmetrics_exporter/84cc967c7e9a3ed85f401435d3747fd221c9c233/lib/instrumented/fetch.ts";
+} from "https://raw.githubusercontent.com/cloudydeno/deno-openmetrics_exporter/6f2c5094992718204395cff2708d350fc8076148/lib/instrumented/fetch.ts";
 
 //------------
 // assemble a customized observables-with-streams export
