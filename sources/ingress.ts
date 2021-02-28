@@ -1,6 +1,6 @@
 import { IngressSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion, WatchLister } from "../common/mod.ts";
 import { KubernetesClient } from '../deps.ts';
-import { NetworkingV1beta1Api } from "https://deno.land/x/kubernetes_apis@v0.2.0/builtin/networking.k8s.io@v1beta1/mod.ts";
+import { NetworkingV1beta1Api } from "https://deno.land/x/kubernetes_apis@v0.3.0/builtin/networking.k8s.io@v1beta1/mod.ts";
 
 export class IngressSource implements DnsSource {
 

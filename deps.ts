@@ -1,11 +1,11 @@
-export * as TOML from "https://deno.land/std@0.81.0/encoding/toml.ts";
+export * as TOML from "https://deno.land/std@0.88.0/encoding/toml.ts";
 
 export type {
   RestClient as KubernetesClient,
-} from "https://deno.land/x/kubernetes_client@v0.1.3/mod.ts";
+} from "https://deno.land/x/kubernetes_client@v0.2.0/mod.ts";
 export {
   autoDetectClient as autoDetectKubernetesClient,
-} from "https://deno.land/x/kubernetes_client@v0.1.3/mod.ts";
+} from "https://deno.land/x/kubernetes_client@v0.2.0/mod.ts";
 
 export {
   ServiceAccount,
@@ -23,7 +23,7 @@ export {
 
 import {
   readableStreamFromAsyncIterator as fromAsyncIterator,
-} from "https://deno.land/std@0.81.0/io/streams.ts";
+} from "https://deno.land/std@0.88.0/io/streams.ts";
 
 import { fromTimer } from "https://cloudydeno.github.io/observables-with-streams/src/sources/from-timer.ts";
 import { just } from "https://cloudydeno.github.io/observables-with-streams/src/sources/just.ts";

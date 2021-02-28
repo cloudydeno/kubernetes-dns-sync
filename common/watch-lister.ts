@@ -1,5 +1,5 @@
-import { Status, ObjectMeta } from "https://deno.land/x/kubernetes_apis@v0.2.0/builtin/meta@v1/structs.ts";
-import { Reflector, WatchEvent } from "https://deno.land/x/kubernetes_client@v0.1.3/mod.ts";
+import { Status, ObjectMeta } from "https://deno.land/x/kubernetes_apis@v0.3.0/builtin/meta@v1/structs.ts";
+import { Reflector, WatchEvent } from "https://deno.land/x/kubernetes_client@v0.2.0/mod.ts";
 
 type ListOf<T> = { metadata: { resourceVersion?: string | null }; items: Array<T> };
 
@@ -16,14 +16,20 @@ export class WatchLister<T extends {metadata?: ObjectMeta | null }> extends Refl
     super(lister, watcher);
   }
 
+  private async listFromUpstream() {
+    const {items} = await this.lister({});
+    console.log('INFO: Reflector for', this.label, 'listed upstream');
+    return items;
+  }
+
   async* getFreshList(annotationFilter?: Record<string,string>) {
     const requiredAnnotations = annotationFilter ? Object.entries(annotationFilter) : [];
 
-    const resources = (this.isSynced() ? this.listCached() : null)
-      ?? await this.lister({}).then(x => {
-        console.log('INFO: Reflector for', this.label, 'listed upstream');
-        return x.items;
-      })!;
+    const resources =
+      (this.isSynced()
+        ? this.listCached()
+        : null)
+      ?? await this.listFromUpstream();
 
     loop: for (const node of resources) {
       if (!node.metadata?.name) continue loop;

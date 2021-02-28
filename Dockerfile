@@ -5,4 +5,4 @@ WORKDIR /src/kubernetes-dns-sync
 ADD . ./
 RUN ["deno", "cache", "controller/mod.ts"]
 
-ENTRYPOINT ["deno", "run", "--unstable", "--allow-hrtime", "--allow-net", "--allow-read", "--allow-env", "--cert=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt", "--cached-only", "controller/mod.ts"]
+ENTRYPOINT ["deno", "run", "--unstable", "--allow-hrtime", "--allow-net", "--allow-read", "--allow-env", "--cached-only", "controller/mod.ts"]
