@@ -1,5 +1,5 @@
-# FROM hayd/alpine-deno:1.6.1
-FROM danopia/deno-experiments:per_op_metrics
+# FROM hayd/alpine-deno:1.8.0
+FROM danopia/deno-experiments:1.8.0-heapmetrics
 
 WORKDIR /src/kubernetes-dns-sync
 ADD . ./
