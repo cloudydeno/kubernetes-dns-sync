@@ -37,9 +37,9 @@ export function createTickStream(
 
     // Subscribe to every source's events
     for (const source of sources) {
-      tickStreams.push(ows.fromAsyncIterator(source
+      tickStreams.push(ows.fromIterable(source
         .MakeEventSource())
-        .pipeThrough(ows.map(x => source), pipeOpts));
+        .pipeThrough(ows.map(() => source), pipeOpts));
     }
 
     // Also regular infrequent ticks just in case
