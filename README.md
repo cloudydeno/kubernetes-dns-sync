@@ -9,12 +9,40 @@
 
 For rationale of creating my own external-dns-like project see the end of this README.
 
+### Supported record sources
+
+See below sections for more info on each source.
+
+* `ingress` for `networking.k8s.io/v1` `Ingress`
+* `crd` for `externaldns.k8s.io/v1alpha1` `DNSEndpoint`
+* `acme-crd` for `acme.cert-manager.io/v1` `Challenge`
+* `node` for `v1` `Node`
+
+All sources can be configured with their own `annotation_filter`.
+
+### Supported DNS providers
+
+* [Vultr: "The Infrastructure Cloud"](https://www.vultr.com/)
+* [Google Cloud DNS](https://cloud.google.com/dns)
+
+I'd be open to adding and/or merging a couple others - in particular
+AWS Route53,
+Cloudflare,
+Namecheap,
+Gandi,
+etc. but for my needs having one or two providers is plenty.
+
 ## Options
 
 * `--dry-run`: don't actually make any changes, only print them
 * `--yes`: commit changes to DNS provider APIs without asking
 * `--once`: one run only, exits when done
 * `--serve-metrics`: start an OpenMetrics/Prometheus server on port 9090
+
+The default behavior
+(if neither `--dry-run` nor `--yes` are supplied)
+is to print the planned changes and
+interactively ask the user before applying them.
 
 ## Sources
 
@@ -29,6 +57,10 @@ especially if you have a split-horizon DNS configuration.
 type = "ingress"
 annotation_filter = { "\"kubernetes.io/ingress.class\"": "nginx" }
 ```
+
+Note that broken-looking TOML syntax. Trust me, it works as is...
+but eventually Deno's TOML parser will be fixed.
+[I've filed an issue upstream](https://github.com/denoland/deno_std/issues/823).
 
 ### `crd`
 
@@ -78,6 +110,8 @@ address_type = "ExternalIP"
 fqdn_template = "{{index .Labels \"kubernetes.io/hostname\"}}.pet.devmode.cloud"
 annotation_filter = { "\"kubernetes.io/node.class\"": "pet" }
 ```
+
+NOTE: The only interpolation currently allowed in `fqdn_template` is `{{ index .Labels .... }}`
 
 ## Why?
 
