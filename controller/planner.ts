@@ -1,5 +1,5 @@
 import { Zone, Changes, Endpoint } from "../common/contract.ts";
-import { intersection, union } from "../common/set-util.ts";
+import { intersection, union } from "../deps.ts";
 
 export class Planner {
   constructor(
