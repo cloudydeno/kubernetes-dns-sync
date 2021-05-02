@@ -7,8 +7,10 @@ export class NodeSource implements DnsSource {
   constructor(
     public config: NodeSourceConfig,
     private client: KubernetesClient,
-  ) {}
-  coreApi = new CoreV1Api(this.client);
+  ) {
+    this.coreApi = new CoreV1Api(this.client);
+  }
+  coreApi: CoreV1Api;
 
   watchLister = new WatchLister('Node',
     opts => this.coreApi.getNodeList({ ...opts }),

@@ -7,8 +7,10 @@ export class CrdSource implements DnsSource {
   constructor(
     public config: CrdSourceConfig,
     private client: KubernetesClient,
-  ) {}
-  crdApi = new ExternaldnsV1alpha1Api(this.client);
+  ) {
+    this.crdApi = new ExternaldnsV1alpha1Api(this.client);
+  }
+  crdApi: ExternaldnsV1alpha1Api;
 
   watchLister = new WatchLister('CRD',
     opts => this.crdApi.getDNSEndpointListForAllNamespaces({ ...opts }),

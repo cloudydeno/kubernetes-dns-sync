@@ -1,4 +1,4 @@
-name: Deno CI
+name: CI
 
 on:
   push:
@@ -12,14 +12,14 @@ jobs:
     name: Deno ${{ matrix.deno-version }}
     strategy:
       matrix:
-        deno-version: ["v1.6", "v1.7", "nightly"]
+        deno-version: ["v1.8", "v1.9", "canary"]
 
     steps:
     - name: Checkout source
       uses: actions/checkout@v2
 
     - name: Use Deno ${{ matrix.deno-version }}
-      uses: denolib/setup-deno@v2
+      uses: denoland/setup-deno@main
       with:
         deno-version: ${{ matrix.deno-version }}
 

@@ -7,8 +7,10 @@ export class IngressSource implements DnsSource {
   constructor(
     public config: IngressSourceConfig,
     private client: KubernetesClient,
-  ) {}
-  networkingApi = new NetworkingV1beta1Api(this.client);
+  ) {
+    this.networkingApi = new NetworkingV1beta1Api(this.client);
+  }
+  networkingApi: NetworkingV1beta1Api;
 
   watchLister = new WatchLister('Ingress',
     opts => this.networkingApi.getIngressListForAllNamespaces({ ...opts }),

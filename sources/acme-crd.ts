@@ -13,8 +13,10 @@ export class AcmeCrdSource implements DnsSource {
   constructor(
     public config: AcmeCrdSourceConfig,
     private client: KubernetesClient,
-  ) {}
-  crdApi = new AcmeCertManagerIoV1Api(this.client);
+  ) {
+    this.crdApi = new AcmeCertManagerIoV1Api(this.client);
+  }
+  crdApi: AcmeCertManagerIoV1Api;
 
   watchLister = new WatchLister('ACME CRD',
     opts => this.crdApi.getChallengeListForAllNamespaces({ ...opts }),

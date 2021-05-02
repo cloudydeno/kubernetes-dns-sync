@@ -12,12 +12,14 @@ import { GoogleCloudDnsApi,
 export class GoogleProvider implements DnsProvider<GoogleProviderContext> {
   constructor(
     public config: GoogleProviderConfig,
-  ) {}
+  ) {
+    this.projectId = this.config.project_id ?? this.api.projectId;
+  }
+  private projectId: string;
   private api = new GoogleCloudDnsApi(
     Deno.args.includes('--dry-run') ? 'readonly' : 'readwrite',
     Deno.args.includes('--once'), // deno can't unref timers yet
   );
-  private projectId = this.config.project_id ?? this.api.projectId;
 
   async NewContext(): Promise<GoogleProviderContext> {
     const zones = new Array<Zone>();
