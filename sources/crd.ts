@@ -1,6 +1,6 @@
 import { CrdSourceConfig, DnsSource, Endpoint, SplitOutTarget, WatchLister } from "../common/mod.ts";
 import { KubernetesClient } from '../deps.ts';
-import { ExternaldnsV1alpha1Api } from "https://deno.land/x/kubernetes_apis@v0.3.0/external-dns/externaldns.k8s.io@v1alpha1/mod.ts";
+import { ExternaldnsV1alpha1Api } from "https://deno.land/x/kubernetes_apis@v0.3.1/external-dns/externaldns.k8s.io@v1alpha1/mod.ts";
 
 export class CrdSource implements DnsSource {
 
