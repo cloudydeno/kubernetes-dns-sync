@@ -1,9 +1,9 @@
 # kubernetes-dns-sync
 
-[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fdep-count%2Fgh%2Fdanopia%2Fkubernetes-dns-sync%2Fcontroller%2Fmod.ts)][deno-vis]
-[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fupdates%2Fgh%2Fdanopia%2Fkubernetes-dns-sync%2Fcontroller%2Fmod.ts)][deno-vis]
+[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fdep-count%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fcontroller%2Fmod.ts)][deno-vis]
+[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fupdates%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fcontroller%2Fmod.ts)][deno-vis]
 
-[deno-vis]: https://deno-visualizer.danopia.net/dependencies-of/https/raw.githubusercontent.com/danopia/kubernetes-dns-sync/main/controller/mod.ts?rankdir=LR
+[deno-vis]: https://deno-visualizer.danopia.net/dependencies-of/https/raw.githubusercontent.com/cloudydeno/kubernetes-dns-sync/main/controller/mod.ts?rankdir=LR
 
 ## Work In Progress!!
 
@@ -55,12 +55,8 @@ especially if you have a split-horizon DNS configuration.
 ```toml
 [[source]]
 type = "ingress"
-annotation_filter = { "\"kubernetes.io/ingress.class\"": "nginx" }
+annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
 ```
-
-Note that broken-looking TOML syntax. Trust me, it works as is...
-but eventually Deno's TOML parser will be fixed.
-[I've filed an issue upstream](https://github.com/denoland/deno_std/issues/823).
 
 ### `crd`
 
@@ -108,7 +104,7 @@ but if you're hosting HTTP, the ingress source is probably what you want instead
 type = "node"
 address_type = "ExternalIP"
 fqdn_template = "{{index .Labels \"kubernetes.io/hostname\"}}.pet.devmode.cloud"
-annotation_filter = { "\"kubernetes.io/node.class\"": "pet" }
+annotation_filter = { "kubernetes.io/node.class" = "pet" }
 ```
 
 NOTE: The only interpolation currently allowed in `fqdn_template` is `{{ index .Labels .... }}`

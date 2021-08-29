@@ -1,10 +1,10 @@
 [[source]]
 type = "crd"
-annotation_filter = { "\"kubernetes.io/ingress.class\"": "internet" }
+annotation_filter = { "kubernetes.io/ingress.class" = "internet" }
 
 [[source]]
 type = "ingress"
-annotation_filter = { "\"kubernetes.io/ingress.class\"": "internet" }
+annotation_filter = { "kubernetes.io/ingress.class" = "internet" }
 
 [[source]]
 type = "node"
