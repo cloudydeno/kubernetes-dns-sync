@@ -1,16 +1,16 @@
-export * as TOML from "https://deno.land/std@0.95.0/encoding/toml.ts";
+export * as TOML from "https://deno.land/std@0.105.0/encoding/toml.ts";
 
 export type {
   RestClient as KubernetesClient,
-} from "https://deno.land/x/kubernetes_client@v0.2.4/mod.ts";
+} from "https://deno.land/x/kubernetes_client@v0.3.0/mod.ts";
 export {
   autoDetectClient as autoDetectKubernetesClient,
-} from "https://deno.land/x/kubernetes_client@v0.2.4/mod.ts";
+} from "https://deno.land/x/kubernetes_client@v0.3.0/mod.ts";
 
 // from https://github.com/cloudydeno/deno-bitesized :
 export {
   ServiceAccount,
-} from "https://crux.land/5D1UrM#google-service-account@v2";
+} from "https://crux.land/tSUUW#google-service-account";
 export {
   intersection,
   union,
