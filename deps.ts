@@ -10,7 +10,7 @@ export {
 // from https://github.com/cloudydeno/deno-bitesized :
 export {
   ServiceAccount,
-} from "https://crux.land/tSUUW#google-service-account";
+} from "https://crux.land/6FyxGX#google-service-account";
 export {
   intersection,
   union,
