@@ -16,8 +16,8 @@ export {
   union,
 } from "https://crux.land/QGXi9#set-util@v1";
 
-export { runMetricsServer } from "https://deno.land/x/observability@v0.1.0/sinks/openmetrics/server.ts";
-export { replaceGlobalFetch } from "https://deno.land/x/observability@v0.1.0/sources/fetch.ts";
+export { runMetricsServer } from "https://deno.land/x/observability@v0.1.1/sinks/openmetrics/server.ts";
+export { replaceGlobalFetch } from "https://deno.land/x/observability@v0.1.1/sources/fetch.ts";
 
 //------------
 // assemble a customized observables-with-streams export
