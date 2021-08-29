@@ -2,19 +2,7 @@
 # If you add multiple, all the records are merged together
 [[source]]
 type = "ingress"
-# The TOML syntax for annotation filters is incorrect, and here's why:
-# ------
-# Deno's TOML parser is multiple kinds of wrong!
-# Inline should be this:
-# annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
-# ... but the parser tries reading as JSON.
-# Expanded should be this:
-#[provider.annotation_filter]
-#"kubernetes.io/ingress.class" = "nginx"
-# ... but the key just silently gets lost.
-# This is what actually works as of std@0.79:
-annotation_filter = { "\"kubernetes.io/ingress.class\"": "nginx" }
- # also this comment is read as a key because it = "indented"
+annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
 
 # Where the records are synced to so users can access them
 # If you add multiple, they'll receive a copy of the full record list individually
