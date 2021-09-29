@@ -22,12 +22,12 @@ export { replaceGlobalFetch } from "https://deno.land/x/observability@v0.1.1/sou
 //------------
 // assemble a customized observables-with-streams export
 
-import { fromIterable } from "https://deno.land/x/stream_observables@v1.1/sources/from-iterable.ts";
-import { fromTimer } from "https://deno.land/x/stream_observables@v1.1/sources/from-timer.ts";
-import { just } from "https://deno.land/x/stream_observables@v1.1/sources/just.ts";
-import { merge } from "https://deno.land/x/stream_observables@v1.1/combiners/merge.ts";
-import { map } from "https://deno.land/x/stream_observables@v1.1/transforms/map.ts";
-import { debounce } from "https://deno.land/x/stream_observables@v1.1/transforms/debounce.ts";
+import { fromIterable } from "https://deno.land/x/stream_observables@v1.2/sources/from-iterable.ts";
+import { fromTimer } from "https://deno.land/x/stream_observables@v1.2/sources/from-timer.ts";
+import { just } from "https://deno.land/x/stream_observables@v1.2/sources/just.ts";
+import { merge } from "https://deno.land/x/stream_observables@v1.2/combiners/merge.ts";
+import { map } from "https://deno.land/x/stream_observables@v1.2/transforms/map.ts";
+import { debounce } from "https://deno.land/x/stream_observables@v1.2/transforms/debounce.ts";
 
 export const ows = {
   fromIterable,
