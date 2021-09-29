@@ -62,9 +62,18 @@ export interface VultrProviderConfig {
   type: "vultr";
   domain_filter?: string[];
 }
+export interface PowerDnsProviderConfig {
+  type: "powerdns";
+  api_endpoint?: string;
+  server_id?: string;
+  domain_filter?: string[];
+  // send_dns_notify?: boolean;
+  // rectify_dnssec?: boolean;
+}
 export type ProviderConfig =
 | GoogleProviderConfig
 | VultrProviderConfig
+| PowerDnsProviderConfig
 ;
 
 export interface TxtRegistryConfig {

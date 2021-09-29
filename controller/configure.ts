@@ -17,6 +17,7 @@ import { NodeSource } from '../sources/node.ts';
 
 import { GoogleProvider } from '../providers/google/mod.ts';
 import { VultrProvider } from '../providers/vultr/mod.ts';
+import { PowerDnsProvider } from "../providers/powerdns/mod.ts";
 
 import { TxtRegistry } from "../registries/txt.ts";
 import { NoopRegistry } from "../registries/noop.ts";
@@ -44,6 +45,8 @@ export function provider(provider: ProviderConfig) {
       return new GoogleProvider(provider);
     case 'vultr':
       return new VultrProvider(provider);
+    case 'powerdns':
+      return new PowerDnsProvider(provider);
     default:
       throw new Error(`Invalid provider 'type' ${(provider as any).type}`);
   }
