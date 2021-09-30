@@ -41,6 +41,9 @@ jobs:
     - name: Check controller/mod.ts
       run: time deno cache --reload controller/mod.ts
 
+    - name: Run test suite
+      run: time deno test
+
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/
   push:
