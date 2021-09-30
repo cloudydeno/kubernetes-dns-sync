@@ -9,6 +9,16 @@
 
 For rationale of creating my own external-dns-like project see the end of this README.
 
+### `external-dns` Compatability
+
+This project is mostly compatible with DNS zones previously managed by external-dns,
+with similar TXT "Registry" support.
+The primary difference is that each record type is now explicitly registered/owned.
+This means that if a managed subdomain already has extra records such as `MX`,
+`kubernetes-dns-sync` will initially assume it is supposed to manage the extra records.
+
+This record type ownership is only a concern when there are existing `external-dns` records.
+
 ### Supported record sources
 
 See below sections for more info on each source.
