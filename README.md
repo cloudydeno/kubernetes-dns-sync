@@ -68,6 +68,11 @@ type = "ingress"
 annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
 ```
 
+The latest default is to use the `Ingress` from `networking.k8s.io/v1`,
+which was introduced in Kubernetes v1.19.
+If your cluster is older, include `api_version = "v1beta1"`.
+This switches to `networking.k8s.io/v1beta1` which was added in Kubernetes v1.14.
+
 ### `crd`
 
 Allows specifying highly custom records via the CRD from the `external-dns` project.

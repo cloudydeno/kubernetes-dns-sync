@@ -31,6 +31,7 @@ export interface SourceConfigBase {
 }
 export interface IngressSourceConfig extends SourceConfigBase {
   type: "ingress";
+  api_version: "v1" | "v1beta1";
 }
 export interface CrdSourceConfig extends SourceConfigBase {
   type: "crd";

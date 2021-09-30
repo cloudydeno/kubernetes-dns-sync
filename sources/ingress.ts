@@ -1,6 +1,11 @@
 import { IngressSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion, WatchLister } from "../common/mod.ts";
 import { KubernetesClient } from '../deps.ts';
-import { NetworkingV1beta1Api } from "https://deno.land/x/kubernetes_apis@v0.3.1/builtin/networking.k8s.io@v1beta1/mod.ts";
+import {
+  Ingress as IngressV1, NetworkingV1Api,
+} from "https://deno.land/x/kubernetes_apis@v0.3.1/builtin/networking.k8s.io@v1/mod.ts";
+import {
+  Ingress as IngressV1beta1, NetworkingV1beta1Api,
+} from "https://deno.land/x/kubernetes_apis@v0.3.1/builtin/networking.k8s.io@v1beta1/mod.ts";
 
 export class IngressSource implements DnsSource {
 
@@ -8,11 +13,15 @@ export class IngressSource implements DnsSource {
     public config: IngressSourceConfig,
     private client: KubernetesClient,
   ) {
-    this.networkingApi = new NetworkingV1beta1Api(this.client);
+    if (config.api_version == "v1beta1") {
+      this.networkingApi = new NetworkingV1beta1Api(this.client);
+    } else {
+      this.networkingApi = new NetworkingV1Api(this.client);
+    }
   }
-  networkingApi: NetworkingV1beta1Api;
+  networkingApi: NetworkingV1Api | NetworkingV1beta1Api;
 
-  watchLister = new WatchLister('Ingress',
+  watchLister = new WatchLister<IngressV1 | IngressV1beta1>('Ingress',
     opts => this.networkingApi.getIngressListForAllNamespaces({ ...opts }),
     opts => this.networkingApi.watchIngressListForAllNamespaces({ ...opts }));
 
