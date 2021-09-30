@@ -19,7 +19,7 @@ export function SplitByIPVersion(all: Endpoint): Endpoint[] {
     endpoints.push(aaaa);
   }
   if (a.Targets.length > 0) {
-    aaaa.RecordType = 'A';
+    a.RecordType = 'A';
     endpoints.push(a);
   }
   return endpoints;
