@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dns-sync-config
+  labels:
+    app.kubernetes.io/name: kubernetes-dns-sync
+data:
+  # more examples: https://github.com/cloudydeno/kubernetes-dns-sync/tree/main/examples
+  config.toml: |
+    enable_watching = true
+
+    [[source]]
+    type = "ingress"
+
+    # if you have cert-manager
+    # [[source]]
+    # type = "acme-crd"
+
+    [[provider]]
+    type = "google"
+    # domain_filter = [ ]
+
+    [registry]
+    type = "txt"
+    # txt_prefix in case you want to manage CNAMEs or wildcards, or hide the TXTs
+    txt_prefix = "_registry."
+    # txt_owner_id to be unique for each deployment managing records in the same zone
+    txt_owner_id = "hack"

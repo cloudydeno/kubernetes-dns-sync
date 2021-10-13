@@ -1,0 +1,63 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dns-sync
+  labels:
+    app.kubernetes.io/name: kubernetes-dns-sync
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubernetes-dns-sync
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubernetes-dns-sync
+
+    spec:
+      serviceAccountName: dns-sync
+      containers:
+      - name: loop
+        image: ghcr.io/cloudydeno/kubernetes-dns-sync
+
+        args:
+        # you want exactly one of these:
+        - --dry-run # don't make changes, only log them
+        # - --yes # make all changes, no questions asked
+
+        - --serve-metrics # openmetrics/prometheus on port 9090
+
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65534
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+
+        # # for api-key provider auth:
+        # envFrom:
+        # - secretRef:
+        #     name: dns-sync-credentials
+
+        volumeMounts:
+        - name: cfgmap
+          mountPath: /src/kubernetes-dns-sync/config.toml
+          subPath: config.toml
+
+        # # for google cloud auth:
+        # - name: google-cloud-key
+        #   mountPath: /var/secrets/google
+
+      volumes:
+      - name: cfgmap
+        configMap:
+          name: dns-sync-config
+          defaultMode: 420
+
+      # # for google cloud auth:
+      # - name: google-cloud-key
+      #   secret:
+      #     secretName: dns-sync-gcloud-key
