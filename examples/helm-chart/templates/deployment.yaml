@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dns-sync.fullname" . }}
+  labels:
+    {{- include "dns-sync.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "dns-sync.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dns-sync.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "dns-sync.serviceAccountName" . }}
+      containers:
+        - name: loop
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          {{- with .Values.image.pullPolicy }}
+          imagePullPolicy: {{ . | quote }}
+          {{- end }}
+          args:
+            {{- if .Values.dnsSync.applyChanges }}
+            - --yes # make all changes, no questions asked
+            {{- else }}
+            - --dry-run # don't make changes, only log them
+            {{- end }}
+          {{- if .Values.dnsSync.serveMetrics }}
+            - --serve-metrics # openmetrics/prometheus on port 9090
+          ports:
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          {{- end }}
+          {{- with .Values.dnsSync.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: cfgmap
+              mountPath: /src/kubernetes-dns-sync/config.toml
+              subPath: config.toml
+          {{- with .Values.dnsSync.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: cfgmap
+          configMap:
+            name: {{ include "dns-sync.fullname" . }}
+            defaultMode: 420
+      {{- with .Values.dnsSync.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
