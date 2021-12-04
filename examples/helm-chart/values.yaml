@@ -34,6 +34,7 @@ dnsSync:
 image:
   repository: ghcr.io/cloudydeno/kubernetes-dns-sync
   tag: ''
+  digest: ''
   pullPolicy: '' # kubernetes default
 
 imagePullSecrets: []

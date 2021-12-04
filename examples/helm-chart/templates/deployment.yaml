@@ -23,9 +23,11 @@ spec:
       serviceAccountName: {{ include "dns-sync.serviceAccountName" . }}
       containers:
         - name: loop
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          {{- with .Values.image.pullPolicy }}
+          {{- with .Values.image }}
+          image: "{{ .repository }}{{ with .tag }}:{{ . }}{{ end }}{{ with .digest }}@{{ . }}{{ end }}"
+          {{- with .pullPolicy }}
           imagePullPolicy: {{ . | quote }}
+          {{- end }}
           {{- end }}
           args:
             {{- if .Values.dnsSync.applyChanges }}
