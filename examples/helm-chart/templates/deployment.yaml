@@ -46,6 +46,11 @@ spec:
           envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if .Values.dnsSync.noColor }}
+          env:
+            - name: NO_COLOR
+              value: NO_COLOR
+          {{- end }}
           {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}

@@ -11,6 +11,8 @@ dnsSync:
   extraVolumeMounts: []
   extraVolumes: []
 
+  noColor: true
+
   # more examples: https://github.com/cloudydeno/kubernetes-dns-sync/tree/main/examples
   config: |
     enable_watching = true
