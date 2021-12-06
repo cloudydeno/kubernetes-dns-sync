@@ -1,0 +1,78 @@
+# Default values for dns-sync.
+
+dnsSync:
+  applyChanges: false
+  serveMetrics: true
+
+  envFrom: []
+  # - secretRef:
+  #     name: dns-sync-credentials
+
+  extraVolumeMounts: []
+  extraVolumes: []
+
+  noColor: true
+
+  # more examples: https://github.com/cloudydeno/kubernetes-dns-sync/tree/main/examples
+  config: |
+    enable_watching = true
+
+    # for demo's sake, no provider:
+    provider = []
+    # but you'll actually want to replace that with something more like:
+    # [[provider]]
+    # type = "google"
+
+    [[source]]
+    type = "ingress"
+
+    [registry]
+    type = "txt"
+    # txt_prefix in case you want to manage CNAMEs or wildcards, or hide the TXTs
+    txt_prefix = "_registry."
+    # txt_owner_id to be unique for each deployment managing records in the same zone
+    txt_owner_id = "example"
+
+image:
+  repository: ghcr.io/cloudydeno/kubernetes-dns-sync
+  tag: ''
+  digest: ''
+  pullPolicy: '' # kubernetes default
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+rbac:
+  create: true
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  # runAsNonRoot: true
+  # runAsUser: 65534
+  # readOnlyRootFilesystem: true
+
+resources: {}
+  # limits:
+  #   cpu: 50m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 50m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
