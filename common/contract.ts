@@ -77,11 +77,11 @@ export class Changes {
 	/** Records that need to be deleted */
 	Delete = new Array<Endpoint>();
 
-	length() {
+	get length() {
 		return this.Create.length + this.Update.length + this.Delete.length;
 	}
 
-	summary() {
+	get summary() {
 		return [
 			this.Create.length, 'creates,',
 			this.Update.length, 'updates,',

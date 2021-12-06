@@ -5,7 +5,6 @@ import {
 } from '../deps.ts';
 
 import { isControllerConfig } from "../common/mod.ts";
-import { Planner } from "./planner.ts";
 import * as configure from "./configure.ts";
 import { createTickStream } from "./ticks.ts";
 
@@ -17,10 +16,14 @@ const sources = config.source.map(configure.source);
 const providers = config.provider.map(configure.provider);
 const registry = [config.registry].map(configure.registry)[0];
 
-const p3 = '   ';
-const p2 = '-->';
-const p1 = '==>';
-const p0 = '!!!';
+import {
+  p3, p2, p1, p0,
+  printTick,
+  loadSourceEndpoints,
+  discoverProviderChanges,
+  printChanges,
+  confirmBeforeApplyingChanges,
+} from "./output.ts";
 
 if (Deno.args.includes('--serve-metrics')) {
   replaceGlobalFetch();
@@ -30,89 +33,28 @@ if (Deno.args.includes('--serve-metrics')) {
 
 // Main loop
 for await (const tickSource of createTickStream(config, sources)) {
-  console.log();
 
   // Log why we're here
-  const tickReason = tickSource
-    ? `via ${tickSource.config.type}`
-    : 'via schedule';
-  console.log('---', new Date(), tickReason);
+  printTick(tickSource?.config.type);
 
-  console.log(p2, 'Loading desired records from', sources.length, 'sources...');
-  const sourceRecords = await Promise.all(sources.map(async source => {
-    const endpoints = await source.Endpoints();
-    console.log(p3, 'Discovered', endpoints.length, 'desired records from', source.config.type);
-    return endpoints;
-  })).then(x => x.flat());
-  console.log(p2, 'Discovered', sourceRecords.length, 'desired records overall');
+  const sourceRecords = await loadSourceEndpoints(sources);
 
   for (const provider of providers) {
     const providerId = provider.config.type;
     const providerCtx = await provider.NewContext();
     const registryCtx = registry.NewContext(providerCtx.Zones);
 
-    console.log(p3, 'Loading existing records from', providerId, '...');
-    const rawExisting = await providerCtx.Records();
-    console.log(p3, 'Recognizing ownership labels on', rawExisting.length, 'records...');
-    const existingRecords = await registryCtx.RecognizeLabels(rawExisting);
-    console.log(p2, 'Found', existingRecords.length, 'existing records from', providerId);
+    const rawChanges = await discoverProviderChanges(registryCtx, providerId, providerCtx, sourceRecords);
 
-    const planner = new Planner(providerCtx.Zones);
-    const changes = planner.PlanChanges(sourceRecords, existingRecords);
-    console.log(p3, 'Planner changes:', ...changes.summary());
-
-    console.log(p3, 'Encoding changed ownership labels...');
-    const rawChanges = await registryCtx.CommitLabels(changes);
-    if (rawChanges.length() === 0) {
+    if (rawChanges.length === 0) {
       console.log(p2, 'Provider', providerId, 'has no necesary changes.');
       continue;
     }
 
-    for (const rec of rawChanges.Create) {
-      if (rec.RecordType === 'TXT') { // long records
-        console.log(p2, '- Create:', rec.RecordType, rec.DNSName);
-        for (const targetVal of rec.Targets) {
-          console.log(p3, '    new:', targetVal);
-        }
-      } else {
-        console.log(p2, '- Create:', rec.RecordType, rec.DNSName, rec.Targets);
-      }
-    }
+    printChanges(rawChanges);
+    if (!confirmBeforeApplyingChanges()) continue;
 
-    for (const [recOld, recNew] of rawChanges.Update) {
-      if (recOld.RecordType === 'TXT') { // long records
-        console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName);
-        for (const targetVal of recOld.Targets) {
-          console.log(p3, '    old:', targetVal);
-        }
-        for (const targetVal of recNew.Targets) {
-          console.log(p3, '    new:', targetVal);
-        }
-      } else {
-        console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName, recOld.Targets, '->', recNew.Targets);
-      }
-    }
-
-    for (const rec of rawChanges.Delete) {
-      if (rec.RecordType === 'TXT') { // long records
-        console.log(p2, '- Delete:', rec.RecordType, rec.DNSName);
-        for (const targetVal of rec.Targets) {
-          console.log(p3, '    old:', targetVal);
-        }
-      } else {
-        console.log(p2, '- Delete:', rec.RecordType, rec.DNSName, rec.Targets);
-      }
-    }
-
-    if (Deno.args.includes('--dry-run')) {
-      console.log(p1, "Doing no changes due to --dry-run");
-      continue;
-    } else if (!Deno.args.includes('--yes')) {
-      if (prompt(`    Proceed with editing provider records?`, 'yes') !== 'yes') throw new Error(
-        `User declined to perform provider edits`);
-    }
-
-    console.log(p1, 'Submitting', ...rawChanges.summary(), 'to', providerId, '...');
+    console.log(p1, 'Submitting', ...rawChanges.summary, 'to', providerId, '...');
     await providerCtx.ApplyChanges(rawChanges);
     console.log(p2, 'Provider', providerId, 'is now up to date.');
   }
