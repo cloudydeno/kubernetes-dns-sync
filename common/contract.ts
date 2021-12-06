@@ -55,8 +55,6 @@ export interface Endpoint {
 
 	/** ProviderSpecific stores provider specific config */
 	ProviderSpecific?: Array<ProviderSpecificProperty>;
-
-	SplitOutTarget(predicate: (t: string) => boolean): [Endpoint, Endpoint];
 }
 
 /** ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers */

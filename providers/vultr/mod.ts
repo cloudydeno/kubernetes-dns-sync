@@ -1,7 +1,7 @@
 import {
   VultrProviderConfig,
   DnsProvider, DnsProviderContext,
-  Zone, Endpoint, Changes, SplitOutTarget,
+  Zone, Endpoint, Changes,
 } from "../../common/mod.ts";
 import { VultrApi } from "./api.ts";
 
@@ -65,7 +65,6 @@ export class VultrProviderContext implements DnsProviderContext {
             Targets: [target],
             RecordTTL: record.ttl >= 0 ? record.ttl : undefined,
             Priority: priority ?? undefined,
-            SplitOutTarget,
           };
           endpoints.push(endp);
           endpMap.set(mapKey, endp);

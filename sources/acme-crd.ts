@@ -1,4 +1,4 @@
-import { AcmeCrdSourceConfig, DnsSource, Endpoint, SplitOutTarget, WatchLister } from "../common/mod.ts";
+import { AcmeCrdSourceConfig, DnsSource, Endpoint, WatchLister } from "../common/mod.ts";
 import { KubernetesClient } from '../deps.ts';
 import { AcmeCertManagerIoV1Api } from "https://deno.land/x/kubernetes_apis@v0.3.1/cert-manager/acme.cert-manager.io@v1/mod.ts";
 
@@ -57,7 +57,6 @@ export class AcmeCrdSource implements DnsSource {
           'external-dns/resource': `acme/${challenge.metadata.namespace}/${challenge.metadata.name}`,
         },
         RecordTTL: this.config.challenge_ttl ?? undefined,
-        SplitOutTarget,
       });
     }
     return endpoints;

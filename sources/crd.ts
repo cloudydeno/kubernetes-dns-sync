@@ -35,14 +35,13 @@ export class CrdSource implements DnsSource {
           },
           RecordTTL: rule.recordTTL ?? undefined,
           ProviderSpecific: (rule.providerSpecific ?? []).map(x => ({Name: x.name ?? '', Value: x.value ?? ''})),
-          SplitOutTarget,
         };
 
         // TODO: also SRV
         if (endpoint.RecordType === 'MX') {
           const allPrios = new Set(endpoint.Targets.map(x => x.split(' ')[0]));
           for (const priority of Array.from(allPrios)) {
-            const subEndpoint = endpoint.SplitOutTarget(x => x.split(' ')[0] === priority)[0];
+            const subEndpoint = SplitOutTarget(endpoint, x => x.split(' ')[0] === priority)[0];
             subEndpoint.Priority = parseInt(priority);
             subEndpoint.Targets = subEndpoint.Targets.map(x => x.split(' ')[1]);
             endpoints.push(subEndpoint);

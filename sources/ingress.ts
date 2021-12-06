@@ -1,4 +1,4 @@
-import { IngressSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion, WatchLister } from "../common/mod.ts";
+import { IngressSourceConfig, DnsSource, Endpoint, SplitByIPVersion, WatchLister } from "../common/mod.ts";
 import { KubernetesClient } from '../deps.ts';
 import {
   Ingress as IngressV1, NetworkingV1Api,
@@ -53,7 +53,6 @@ export class IngressSource implements DnsSource {
             Labels: {
               'external-dns/resource': `ingress/${node.metadata.namespace}/${node.metadata.name}`,
             },
-            SplitOutTarget,
           });
         } else if (addresses.length > 0) {
           endpoints.push(...SplitByIPVersion({
@@ -64,7 +63,6 @@ export class IngressSource implements DnsSource {
             Labels: {
               'external-dns/resource': `ingress/${node.metadata.namespace}/${node.metadata.name}`,
             },
-            SplitOutTarget,
           }));
         }
       }

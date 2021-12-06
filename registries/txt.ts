@@ -48,7 +48,7 @@ class TxtRegistryContext implements DnsRegistryContext {
             this.heritageRecords.set(recordset.DNSName, recordset);
             continue;
           } else {
-            const [heritageRec, otherTxts] = recordset.SplitOutTarget(x => x === heritageValue);
+            const [heritageRec, otherTxts] = SplitOutTarget(recordset, x => x === heritageValue);
             this.heritageRecords.set(recordset.DNSName, heritageRec);
             recordset = otherTxts;
           }
@@ -153,7 +153,6 @@ class TxtRegistryContext implements DnsRegistryContext {
         DNSName: txtName,
         RecordType: 'TXT',
         Targets: [Object.entries(labels).map(x => x.join('=')).join(',')],
-        SplitOutTarget,
       } : null;
       // console.log(existingEndpoint, newEndpoint)
 

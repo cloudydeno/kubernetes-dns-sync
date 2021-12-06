@@ -1,4 +1,4 @@
-import { NodeSourceConfig, DnsSource, Endpoint, SplitOutTarget, SplitByIPVersion, WatchLister } from "../common/mod.ts";
+import { NodeSourceConfig, DnsSource, Endpoint, SplitByIPVersion, WatchLister } from "../common/mod.ts";
 import { KubernetesClient } from '../deps.ts';
 import { CoreV1Api } from "https://deno.land/x/kubernetes_apis@v0.3.1/builtin/core@v1/mod.ts";
 
@@ -42,7 +42,6 @@ export class NodeSource implements DnsSource {
         Labels: {
           'external-dns/resource': `node/${node.metadata.name}`,
         },
-        SplitOutTarget,
       }));
 
     }
