@@ -1,7 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.105.0/testing/asserts.ts";
 
-import type { Endpoint } from "./contract.ts";
-import { SplitByIPVersion, SplitOutTarget } from "./endpoints.ts";
+import { SplitByIPVersion } from "./endpoints.ts";
 
 Deno.test('Endpoint SplitByIPVersion: Dualstack targets', () => {
   verifySplitByIPVersion({
@@ -54,7 +53,6 @@ function verifySplitByIPVersion(opts: {
     DNSName: 'example.com',
     RecordType: 'A',
     Targets: opts.inputTargets,
-    SplitOutTarget,
   });
 
   // Check number of resulting endpoints
