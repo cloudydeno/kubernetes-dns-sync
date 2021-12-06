@@ -2,7 +2,6 @@ import {
   GoogleProviderConfig,
   DnsProvider, DnsProviderContext,
   Zone, Endpoint, Changes,
-  SplitOutTarget,
 } from "../../common/mod.ts";
 import { GoogleCloudDnsApi,
   Schema$Change,
@@ -64,7 +63,6 @@ export class GoogleProviderContext implements DnsProviderContext {
           Targets: decodeTargets(record.type!, record.rrdatas!),
           RecordTTL: record.ttl ?? undefined,
           Priority: undefined,
-          SplitOutTarget,
         });
 
       }

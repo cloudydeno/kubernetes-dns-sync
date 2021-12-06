@@ -1,7 +1,6 @@
 import {
   PowerDnsProviderConfig,
   DnsProvider, DnsProviderContext,
-  SplitOutTarget,
   Zone, Endpoint, Changes,
 } from "../../common/mod.ts";
 import { PowerDnsApi } from "./api.ts";
@@ -54,7 +53,6 @@ export class PowerDnsProviderContext implements DnsProviderContext {
             : x.content),
           RecordTTL: recordSet.ttl ?? undefined,
           Priority: recordSet.priority ?? undefined,
-          SplitOutTarget,
         });
       }
     }

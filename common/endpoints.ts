@@ -1,18 +1,18 @@
 import { Endpoint } from "./contract.ts";
 
 /// Basic function for non-special cases
-export function SplitOutTarget(this: Endpoint, predicate: (t: string) => boolean): [Endpoint, Endpoint] {
+export function SplitOutTarget(self: Endpoint, predicate: (t: string) => boolean): [Endpoint, Endpoint] {
   return [{
-    ...this,
-    Targets: this.Targets.filter(predicate),
+    ...self,
+    Targets: self.Targets.filter(predicate),
   }, {
-    ...this,
-    Targets: this.Targets.filter(x => !predicate(x)),
+    ...self,
+    Targets: self.Targets.filter(x => !predicate(x)),
   }];
 }
 
 export function SplitByIPVersion(all: Endpoint): Endpoint[] {
-  const [aaaa, a] = all.SplitOutTarget(t => t.includes(':'));
+  const [aaaa, a] = SplitOutTarget(all, t => t.includes(':'));
   const endpoints = new Array<Endpoint>();
   if (aaaa.Targets.length > 0) {
     aaaa.RecordType = 'AAAA';
