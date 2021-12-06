@@ -3,13 +3,13 @@ import {
   DnsProvider, DnsProviderContext,
   Zone, Endpoint, Changes,
 } from "../../common/mod.ts";
-import { VultrApi } from "./api.ts";
+import { VultrApi, VultrApiSurface } from "./api.ts";
 
 export class VultrProvider implements DnsProvider<VultrProviderContext> {
   constructor(
     public config: VultrProviderConfig,
+    private api: VultrApiSurface = new VultrApi(),
   ) {}
-  private api = new VultrApi();
 
 	async NewContext() {
     const zones = new Array<Zone>();
@@ -26,7 +26,7 @@ export class VultrProviderContext implements DnsProviderContext {
   constructor(
     public config: VultrProviderConfig,
     public Zones: Array<Zone>,
-    private api: VultrApi,
+    private api: VultrApiSurface,
   ) {}
 
   private recordIds = new Map<string, string>();
@@ -51,7 +51,7 @@ export class VultrProviderContext implements DnsProviderContext {
         const mapKey = [record.name, record.type, priority].join(':');
         const target = record.type === 'TXT' ? record.data.slice(1, -1) : record.data; // any others?
 
-        const recordKey = this.recordKey(record.name, record.type, priority, target);
+        const recordKey = this.recordKey(dnsName, record.type, priority, target);
         if (this.recordIds.has(recordKey)) throw new Error(`Record key ${recordKey} overlapped`);
         this.recordIds.set(recordKey, record.id);
 

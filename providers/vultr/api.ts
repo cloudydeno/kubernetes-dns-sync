@@ -1,4 +1,20 @@
-export class VultrApi {
+export interface VultrApiSurface {
+  listAllZones(): AsyncGenerator<DomainRecord>;
+  listAllRecords(zone: string): AsyncGenerator<DnsRecord>;
+
+  createRecord(zone: string,
+    record: DnsRecordData,
+  ): Promise<DnsRecord>;
+  updateRecord(zone: string,
+    recordId: string,
+    changes: Partial<Omit<DnsRecordData, "type">>,
+  ): Promise<void>;
+  deleteRecord(zone: string,
+    recordId: string,
+  ): Promise<void>;
+}
+
+export class VultrApi implements VultrApiSurface {
 
   #apiKey: string;
   constructor() {
@@ -88,15 +104,17 @@ export class VultrApi {
   }
 }
 
-interface DomainList {
-  domains: Array<{
-    domain: string;
-    date_created: string;
-  }>;
+export interface DomainRecord {
+  domain: string;
+  date_created: string;
+};
+
+export interface DomainList {
+  domains: Array<DomainRecord>;
   meta: ListMeta;
 };
 
-interface DnsRecordData {
+export interface DnsRecordData {
   type: string;
   name: string;
   data: string;
@@ -104,18 +122,18 @@ interface DnsRecordData {
   ttl?: number;
 }
 
-interface DnsRecord extends DnsRecordData {
+export interface DnsRecord extends DnsRecordData {
   id: string;
   priority: number;
   ttl: number;
 }
 
-interface RecordList {
+export interface RecordList {
   records: Array<DnsRecord>;
   meta: ListMeta;
 }
 
-interface ListMeta {
+export interface ListMeta {
   total: number;
   links: {
     next: string, prev: string;
