@@ -1,16 +1,9 @@
 import {
   VultrProviderConfig,
   DnsProvider, DnsProviderContext,
-  Zone, Endpoint, Changes,
+  Zone, Endpoint, Changes, SplitOutTarget,
 } from "../../common/mod.ts";
 import { VultrApi } from "./api.ts";
-
-// Store metadata on our Endpoints because the API has its own opaque per-target IDs
-// TODO: do this a different way (Map on the Context)
-type VultrEntry = Endpoint & {
-  vultrIds: string[];
-  vultrZone: string;
-};
 
 export class VultrProvider implements DnsProvider<VultrProviderContext> {
   constructor(
@@ -36,6 +29,11 @@ export class VultrProviderContext implements DnsProviderContext {
     private api: VultrApi,
   ) {}
 
+  private recordIds = new Map<string, string>();
+  private recordKey(name: string, type: string, priority: number | null | undefined, value: string) {
+    return JSON.stringify([name, type, priority ?? null, value]);
+  }
+
   findZoneForName(dnsName: string): Zone | undefined {
     const matches = this.Zones.filter(x => x.DNSName == dnsName || dnsName.endsWith('.'+x.DNSName));
     return matches.sort((a,b) => b.DNSName.length - a.DNSName.length)[0];
@@ -45,7 +43,7 @@ export class VultrProviderContext implements DnsProviderContext {
     const endpoints = new Array<Endpoint>(); // every recordset we find
     for (const zone of this.Zones) {
 
-      const endpMap = new Map<string, VultrEntry>(); // collapse targets with same name/type/priority
+      const endpMap = new Map<string, Endpoint>(); // collapse targets with same name/type/priority
       for await (const record of this.api.listAllRecords(zone.DNSName)) {
 
         const priority = (record.type === 'MX' || record.type === 'SRV') ? record.priority : null;
@@ -53,19 +51,20 @@ export class VultrProviderContext implements DnsProviderContext {
         const mapKey = [record.name, record.type, priority].join(':');
         const target = record.type === 'TXT' ? record.data.slice(1, -1) : record.data; // any others?
 
+        const recordKey = this.recordKey(record.name, record.type, priority, target);
+        if (this.recordIds.has(recordKey)) throw new Error(`Record key ${recordKey} overlapped`);
+        this.recordIds.set(recordKey, record.id);
+
         const existingEndp = endpMap.get(mapKey);
         if (existingEndp) {
           existingEndp.Targets.push(target);
-          existingEndp.vultrIds.push(record.id);
         } else {
-          const endp: VultrEntry = {
+          const endp: Endpoint = {
             DNSName: dnsName,
             RecordType: record.type,
             Targets: [target],
             RecordTTL: record.ttl >= 0 ? record.ttl : undefined,
             Priority: priority ?? undefined,
-            vultrIds: [record.id],
-            vultrZone: zone.DNSName,
             SplitOutTarget,
           };
           endpoints.push(endp);
@@ -79,22 +78,34 @@ export class VultrProviderContext implements DnsProviderContext {
 
   async ApplyChanges(changes: Changes): Promise<void> {
 
-    for (const deleted of changes.Delete as VultrEntry[]) {
-      if (!deleted.vultrIds || deleted.vultrIds.length !== deleted.Targets.length) throw new Error(`BUG`);
-      for (const id of deleted.vultrIds) {
-        await this.api.deleteRecord(deleted.vultrZone, id);
+    for (const deleted of changes.Delete as Endpoint[]) {
+      const zone = this.findZoneForName(deleted.DNSName);
+      if (!zone) throw new Error(`Vultr zone not found for ${deleted.DNSName}`);
+
+      for (const target of deleted.Targets) {
+        const recordKey = this.recordKey(deleted.DNSName, deleted.RecordType, deleted.Priority, target);
+        const recordId = this.recordIds.get(recordKey);
+        if (!recordId) throw new Error(`BUG: No vultr record ID found for ${recordKey}`);
+
+        await this.api.deleteRecord(zone.ZoneID, recordId);
       }
     }
 
-    for (const [before, after] of changes.Update as Array<[VultrEntry, Endpoint]>) {
-      const zone = before.vultrZone;
+    for (const [before, after] of changes.Update as Array<[Endpoint, Endpoint]>) {
+      const zone = this.findZoneForName(before.DNSName);
+      if (!zone) throw new Error(`Vultr zone not found for ${before.DNSName}`);
+
       // TODO: be more efficient with updating-in-place
-      for (const recordId of before.vultrIds) {
-        await this.api.deleteRecord(zone, recordId);
+      for (const target of before.Targets) {
+        const recordKey = this.recordKey(before.DNSName, before.RecordType, before.Priority, target);
+        const recordId = this.recordIds.get(recordKey);
+        if (!recordId) throw new Error(`BUG: No vultr record ID found for ${recordKey}`);
+
+        await this.api.deleteRecord(zone.ZoneID, recordId);
       }
       for (const target of after.Targets) {
-        await this.api.createRecord(zone, {
-          name: after.DNSName == zone ? '' : after.DNSName.slice(0, -zone.length - 1),
+        await this.api.createRecord(zone.ZoneID, {
+          name: after.DNSName == zone.DNSName ? '' : after.DNSName.slice(0, -zone.DNSName.length - 1),
           type: after.RecordType,
           data: after.RecordType === 'TXT' ? `"${target}"` : target,
           ttl: after.RecordTTL ?? undefined,
@@ -105,7 +116,7 @@ export class VultrProviderContext implements DnsProviderContext {
 
     for (const created of changes.Create) {
       const zone = this.findZoneForName(created.DNSName);
-      if (!zone) continue;
+      if (!zone) throw new Error(`Vultr zone not found for ${created.DNSName}`);
 
       for (const target of created.Targets) {
         await this.api.createRecord(zone.ZoneID, {
@@ -120,18 +131,4 @@ export class VultrProviderContext implements DnsProviderContext {
 
   }
 
-}
-
-/// Support splitting records and still keeping vultrIds
-export function SplitOutTarget(this: VultrEntry, predicate: (t: string) => boolean): [VultrEntry, VultrEntry] {
-  const idxs = new Set(this.Targets.flatMap((x, idx) => predicate(x) ? [idx] : []));
-  return [{
-    ...this,
-    Targets: this.Targets.flatMap((x, idx) => idxs.has(idx) ? [x] : []),
-    vultrIds: this.vultrIds.flatMap((x, idx) => idxs.has(idx) ? [x] : []),
-  }, {
-    ...this,
-    Targets: this.Targets.flatMap((x, idx) => idxs.has(idx) ? [] : [x]),
-    vultrIds: this.vultrIds.flatMap((x, idx) => idxs.has(idx) ? [] : [x]),
-  }];
 }
