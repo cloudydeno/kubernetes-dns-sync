@@ -3,83 +3,129 @@ import { DnsProvider, DnsProviderContext, DnsRegistry, DnsRegistryContext, Endpo
 
 import { DnsRecord, DnsRecordData, DomainRecord } from "../providers/vultr/api.ts";
 import { VultrProvider } from "../providers/vultr/mod.ts";
+import { VultrApiMock } from "../providers/vultr/mock.ts";
 import { TxtRegistry } from "../registries/txt.ts";
 import { Planner } from "./planner.ts";
 
-Deno.test("[E2E] Update A record: TXT registry, Vultr provider", async () => {
+Deno.test("[E2E: Vultr & TXT] Keep unchanged A record", async () => {
 
   const registry = new TxtRegistry({
-    txt_owner_id: 'dnssynctest',
     type: 'txt',
+    txt_owner_id: 'dnssynctest',
   });
+
+  const apiMock = new VultrApiMock();
+  apiMock.addMockedZone('example.com', [{
+    expect: 'retained',
+    data: { name: 'www', type: 'A', data: '1.1.1.1' },
+  }, {
+    expect: 'retained',
+    data: { name: 'www', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=dnssynctest,record-type/A=managed"' },
+  }]);
 
   const provider = new VultrProvider({
     type: 'vultr',
-    domain_filter: ['example.com'],
-  }, {
-    async *listAllZones(): AsyncGenerator<DomainRecord> {
-      yield {
-        domain: 'example.com',
-        date_created: 'mock',
-      };
-    },
-    async *listAllRecords(): AsyncGenerator<DnsRecord> {
-      yield {
-        id: 'www-A',
-        name: 'www',
-        type: 'A',
-        data: '1.1.1.1',
-        priority: 0,
-        ttl: 60,
-      };
-      yield {
-        id: 'www-registry',
-        name: 'www',
-        type: 'TXT',
-        data: '"heritage=external-dns,external-dns/owner=dnssynctest,record-type/A=managed"',
-        priority: 0,
-        ttl: 60,
-      };
-    },
-    createRecord(zone: string,
-      record: DnsRecordData,
-    ): Promise<DnsRecord> {
-      assertEquals(zone, 'example.com');
-      assertEquals(record.name, 'www');
-      assertEquals(record.data, '2.2.2.2');
-      return Promise.resolve({
-        priority: 0,
-        ttl: 60,
-        ...record,
-        id: 'new-www-A',
-      })
-    },
-    updateRecord(zone: string,
-      recordId: string,
-      changes: Partial<Omit<DnsRecordData, "type">>,
-    ): Promise<void> {
-      return Promise.reject(new Error('TODO'));
-    },
-    deleteRecord(zone: string,
-      recordId: string,
-    ): Promise<void> {
-      assertEquals(zone, 'example.com');
-      assertEquals(recordId, 'www-A');
-      return Promise.resolve();
-    },
+  }, apiMock);
+
+  await performMain(provider, registry, [{
+    DNSName: "www.example.com",
+    RecordType: "A",
+    Targets: ["1.1.1.1"],
+  }]);
+
+  apiMock.verifyCompletion();
+});
+
+Deno.test("[E2E: Vultr & TXT] Update changed A record", async () => {
+
+  const registry = new TxtRegistry({
+    type: 'txt',
+    txt_owner_id: 'dnssynctest',
+    txt_prefix: 'registry.',
   });
 
-  const sourceRecords: Array<Endpoint> = [{
+  const apiMock = new VultrApiMock();
+  apiMock.addMockedZone('example.com', [{
+    expect: 'deletion',
+    data: { name: 'www', type: 'A', data: '1.1.1.1' },
+  }, {
+    expect: 'creation',
+    data: { name: 'www', type: 'A', data: '2.2.2.2' },
+  }, {
+    expect: 'retained',
+    data: { name: 'registry.www', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=dnssynctest,record-type/A=managed"' },
+  }]);
+
+  const provider = new VultrProvider({
+    type: 'vultr',
+  }, apiMock);
+
+  await performMain(provider, registry, [{
     DNSName: "www.example.com",
     RecordType: "A",
     Targets: ["2.2.2.2"],
-  }];
+  }]);
 
-  const rawChanges = await performMain(provider, registry, sourceRecords);
+  apiMock.verifyCompletion();
+});
 
-  assertEquals(rawChanges.Create.length, 0);
-  assertEquals(rawChanges.Update.length, 1);
-  assertEquals(rawChanges.Delete.length, 0);
+Deno.test("[E2E: Vultr & TXT] Remove abandoned A record", async () => {
+
+  const registry = new TxtRegistry({
+    type: 'txt',
+    txt_owner_id: 'dnssynctest',
+  });
+
+  const apiMock = new VultrApiMock();
+  apiMock.addMockedZone('example.com', [{
+    expect: 'deletion',
+    data: { name: 'www', type: 'A', data: '1.1.1.1' },
+  }, {
+    expect: 'deletion',
+    data: { name: 'www', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=dnssynctest,record-type/A=managed"' },
+  }]);
+
+  const provider = new VultrProvider({
+    type: 'vultr',
+  }, apiMock);
+
+  await performMain(provider, registry, []);
+
+  apiMock.verifyCompletion();
+});
+
+Deno.test("[E2E: Vultr & TXT] Add new A record", async () => {
+
+  const registry = new TxtRegistry({
+    type: 'txt',
+    txt_owner_id: 'dnssynctest',
+  });
+
+  const apiMock = new VultrApiMock();
+  apiMock.addMockedZone('example.com', [{
+    expect: 'creation',
+    data: { name: 'www', type: 'A', data: '1.1.1.1' },
+  }, {
+    expect: 'creation',
+    data: { name: 'www', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=dnssynctest,record-type/A=managed,e2e=test"' },
+  }]);
+
+  const provider = new VultrProvider({
+    type: 'vultr',
+  }, apiMock);
+
+  await performMain(provider, registry, [{
+    DNSName: "www.example.com",
+    RecordType: "A",
+    Targets: ["1.1.1.1"],
+    Labels: {e2e: 'test'},
+  }]);
+
+  apiMock.verifyCompletion();
 });
 
 /**
