@@ -38,3 +38,41 @@ Deno.test('vultr record update', async () => {
 
   apiMock.verifyCompletion();
 });
+
+Deno.test('vultr partial record update', async () => {
+
+  const apiMock = new VultrApiMock();
+  const provider = new VultrProvider({
+    type: 'vultr',
+    domain_filter: ['example.com'],
+  }, apiMock);
+
+  apiMock.addMockedDeadZone('another.com');
+  apiMock.addMockedZone('example.com', [{
+    expect: 'retained',
+    data: { name: 'www', type: 'A', data: '1.1.1.1' },
+  }, {
+    expect: 'deletion',
+    data: { name: 'www', type: 'A', data: '2.2.2.2' },
+  }, {
+    expect: 'creation',
+    data: { name: 'www', type: 'A', data: '3.3.3.3' },
+  }]);
+
+  const newEndpoints: Array<Endpoint> = [{
+    DNSName: 'www.example.com',
+    RecordType: 'A',
+    Targets: ['1.1.1.1', '3.3.3.3'],
+  }];
+
+  const ctx = await provider.NewContext();
+  const foundEndpoints = await ctx.Records();
+  assertEquals(foundEndpoints.length, 1);
+
+  const changes = new Changes(newEndpoints, foundEndpoints);
+  changes.Update.push([foundEndpoints[0], newEndpoints[0]]);
+
+  await ctx.ApplyChanges(changes);
+
+  apiMock.verifyCompletion();
+});

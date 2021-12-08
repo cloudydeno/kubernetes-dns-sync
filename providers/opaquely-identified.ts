@@ -1,4 +1,5 @@
 import { Changes, DnsProviderContext, Endpoint, Zone } from "../common/contract.ts";
+import { intersection } from "../deps.ts";
 
 export type RecordEndpoint = Endpoint & {
   Targets: [string]; // enforce exactly one value
@@ -85,8 +86,10 @@ export abstract class OpaquelyIdentifiedProviderContext implements DnsProviderCo
       const zone = this.findZoneForName(before.DNSName);
       if (!zone) throw new Error(`zone not found for ${before.DNSName}`);
 
-      // TODO: be more efficient with updating-in-place
+      // Skip individual records that are kept before and after
+      const overlappingTargets = intersection(new Set(before.Targets), new Set(after.Targets));
       for (const target of before.Targets) {
+        if (overlappingTargets.has(target)) continue;
         const recordKey = this.recordKey(before.DNSName, before.RecordType, before.Priority, target);
         const recordId = this.recordIds.get(recordKey);
         if (!recordId) throw new Error(`BUG: No record ID found for ${recordKey}`);
@@ -94,6 +97,7 @@ export abstract class OpaquelyIdentifiedProviderContext implements DnsProviderCo
         await this.deleteRecord(zone, recordId);
       }
       for (const target of after.Targets) {
+        if (overlappingTargets.has(target)) continue;
         await this.createRecord(zone, after, target);
       }
     }
