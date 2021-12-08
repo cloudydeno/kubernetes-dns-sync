@@ -1,4 +1,4 @@
-FROM denoland/deno:alpine-1.13.2
+FROM denoland/deno:alpine-1.16.4
 WORKDIR /src/kubernetes-dns-sync
 
 ADD deps.ts ./

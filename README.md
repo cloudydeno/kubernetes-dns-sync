@@ -68,10 +68,11 @@ type = "ingress"
 annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
 ```
 
-The latest default is to use the `Ingress` from `networking.k8s.io/v1`,
+This project uses the `Ingress` kind from `networking.k8s.io/v1`,
 which was introduced in Kubernetes v1.19.
-If your cluster is older, include `api_version = "v1beta1"`.
-This switches to `networking.k8s.io/v1beta1` which was added in Kubernetes v1.14.
+If your cluster is older, consider upgrading,
+or perhaps try [an older snapshot](https://github.com/cloudydeno/kubernetes-dns-sync/tree/6b7cff80007fac8189d97bbaaade808a81fd01c3) of this project
+which can still use `networking.k8s.io/v1beta1` (added in Kubernetes v1.14).
 
 ### `crd`
 
@@ -93,7 +94,7 @@ challenge_ttl = 120
 allow_wildcards = true
 ```
 
-To use, configure your issuer with this dummy webhook:
+To use, configure a cert-manager `Issuer` / `ClusterIssuer` with this dummy webhook solver:
 
 ```yaml
     solvers:

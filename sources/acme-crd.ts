@@ -1,6 +1,5 @@
 import { AcmeCrdSourceConfig, DnsSource, Endpoint, WatchLister } from "../common/mod.ts";
-import { KubernetesClient } from '../deps.ts';
-import { AcmeCertManagerIoV1Api } from "https://deno.land/x/kubernetes_apis@v0.3.1/cert-manager/acme.cert-manager.io@v1/mod.ts";
+import { AcmeCertManagerIoV1Api, KubernetesClient } from '../deps.ts';
 
 /**
  * Special source built specifically for cert-manager's ACME CRDs.

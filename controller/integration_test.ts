@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.105.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
 import { DnsProvider, DnsProviderContext, DnsRegistry, DnsRegistryContext, Endpoint } from "../common/contract.ts";
 
 import { DnsRecord, DnsRecordData, DomainRecord } from "../providers/vultr/api.ts";

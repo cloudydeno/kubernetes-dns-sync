@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.105.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
 
 import { Changes, Endpoint } from "../../common/contract.ts";
 import { VultrApiMock } from "./mock.ts";

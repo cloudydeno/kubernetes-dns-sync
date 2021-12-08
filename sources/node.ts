@@ -1,6 +1,5 @@
 import { NodeSourceConfig, DnsSource, Endpoint, SplitByIPVersion, WatchLister } from "../common/mod.ts";
-import { KubernetesClient } from '../deps.ts';
-import { CoreV1Api } from "https://deno.land/x/kubernetes_apis@v0.3.1/builtin/core@v1/mod.ts";
+import { CoreV1Api, KubernetesClient } from '../deps.ts';
 
 export class NodeSource implements DnsSource {
 
