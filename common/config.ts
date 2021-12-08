@@ -82,7 +82,8 @@ export interface TxtRegistryConfig {
   txt_prefix?: string;
   txt_suffix?: string;
   txt_owner_id: string;
-  auto_import?: boolean;
+  auto_adopt_from_owner_ids?: string[];
+  // auto_import?: boolean;
 }
 export interface NoopRegistryConfig {
   type: "noop";

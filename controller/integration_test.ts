@@ -128,6 +128,81 @@ Deno.test("[E2E: Vultr & TXT] Add new A record", async () => {
   apiMock.verifyCompletion();
 });
 
+Deno.test("[E2E: Vultr & TXT] Adopt record from other owner", async () => {
+
+  const registry = new TxtRegistry({
+    type: 'txt',
+    txt_owner_id: 'dnssynctest',
+    txt_prefix: 'registry.',
+    auto_adopt_from_owner_ids: ['legacy'],
+  });
+
+  const apiMock = new VultrApiMock();
+  apiMock.addMockedZone('example.com', [{
+    expect: 'deletion',
+    data: { name: 'www', type: 'A', data: '1.1.1.1' },
+  }, {
+    expect: 'creation',
+    data: { name: 'www', type: 'A', data: '2.2.2.2' },
+  }, {
+    expect: 'deletion',
+    data: { name: 'registry.www', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=legacy"' },
+  }, {
+    expect: 'creation',
+    data: { name: 'registry.www', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=dnssynctest,record-type/A=managed"' },
+  }]);
+
+  const provider = new VultrProvider({
+    type: 'vultr',
+  }, apiMock);
+
+  await performMain(provider, registry, [{
+    DNSName: "www.example.com",
+    RecordType: "A",
+    Targets: ["2.2.2.2"],
+  }]);
+
+  apiMock.verifyCompletion();
+});
+
+Deno.test("[E2E: Vultr & TXT] Adopt without changes", async () => {
+
+  const registry = new TxtRegistry({
+    type: 'txt',
+    txt_owner_id: 'dnssynctest',
+    txt_prefix: 'registry.',
+    auto_adopt_from_owner_ids: ['legacy'],
+  });
+
+  const apiMock = new VultrApiMock();
+  apiMock.addMockedZone('example.com', [{
+    expect: 'retained',
+    data: { name: 'www', type: 'A', data: '1.1.1.1' },
+  }, {
+    expect: 'retained',
+    data: { name: 'registry.www', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=legacy"' },
+  // }, { // TODO: update registry records even when main records are unchanged
+  //   expect: 'creation',
+  //   data: { name: 'registry.www', type: 'TXT', data:
+  //     '"heritage=external-dns,external-dns/owner=dnssynctest,record-type/A=managed"' },
+  }]);
+
+  const provider = new VultrProvider({
+    type: 'vultr',
+  }, apiMock);
+
+  await performMain(provider, registry, [{
+    DNSName: "www.example.com",
+    RecordType: "A",
+    Targets: ["1.1.1.1"],
+  }]);
+
+  apiMock.verifyCompletion();
+});
+
 /**
  * This is a mirror of mod.ts/output.ts except without any logging/prompting.
  * Also, DnsSource isn't used because it doesn't really interact with planning.

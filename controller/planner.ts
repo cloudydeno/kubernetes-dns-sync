@@ -17,6 +17,7 @@ export class Planner {
     const recordsByName = new Map<string, {
       source: Endpoint[];
       oursExisting: Endpoint[];
+      adoptableExisting: Endpoint[];
       othersExisting: Endpoint[];
     }>();
     function getByName(name: string) {
@@ -25,6 +26,7 @@ export class Planner {
         records = {
           source: [],
           oursExisting: [],
+          adoptableExisting: [],
           othersExisting: [],
         };
         recordsByName.set(name.toLowerCase(), records);
@@ -36,8 +38,10 @@ export class Planner {
       getByName(sourceRecord.DNSName).source.push(sourceRecord);
     }
     for (const existingRecord of existingRecords) {
-      if (existingRecord.Labels && existingRecord.Labels['is-ours']) {
+      if (existingRecord.Labels?.['is-ours']) {
         getByName(existingRecord.DNSName).oursExisting.push(existingRecord);
+      } else if (existingRecord.Labels?.['is-adoptable']) {
+        getByName(existingRecord.DNSName).adoptableExisting.push(existingRecord);
       } else {
         getByName(existingRecord.DNSName).othersExisting.push(existingRecord);
       }
@@ -49,6 +53,10 @@ export class Planner {
 
       // No actions: Unmanaged records with no intention to conflict
       if (records.source.length === 0 && records.oursExisting.length === 0) continue;
+      // Otherwise, if there's adoptables, we will take them in :)
+      if (records.adoptableExisting.length > 0) {
+        records.oursExisting = [...records.adoptableExisting, ...records.oursExisting];
+      }
 
       const sourceTypes = new Set(records.source.map(x => x.RecordType));
       const oursExistingTypes = new Set(records.oursExisting.map(x => x.RecordType));

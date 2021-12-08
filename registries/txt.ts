@@ -9,12 +9,14 @@ export class TxtRegistry implements DnsRegistry<TxtRegistryContext> {
   ownerId: string;
   recordPrefix: string;
   recordSuffix: string;
-  autoImport: boolean;
+  autoAdoptFrom: string[];
+  // autoImport: boolean;
   constructor(public config: TxtRegistryConfig) {
     this.ownerId = config.txt_owner_id;
     this.recordPrefix = config.txt_prefix ?? '';
     this.recordSuffix = config.txt_suffix ?? '';
-    this.autoImport = config.auto_import ?? false;
+    this.autoAdoptFrom = config.auto_adopt_from_owner_ids ?? [];
+    // this.autoImport = config.auto_import ?? false;
     if (this.recordSuffix) throw new Error(`TODO: txt suffixes - where do they go?`);
   }
 
@@ -41,6 +43,10 @@ class TxtRegistryContext implements DnsRegistryContext {
           labels[`is-ours`] = (
             labels['heritage'] === 'external-dns'
             && labels['external-dns/owner'] === this.registry.ownerId
+          ) ? 'yes' : '';
+          labels[`is-adoptable`] = (
+            labels['heritage'] === 'external-dns'
+            && this.registry.autoAdoptFrom.includes(labels['external-dns/owner'])
           ) ? 'yes' : '';
           this.nameLabelsMap.set(recordset.DNSName.slice(this.registry.recordPrefix.length), labels);
 
@@ -103,6 +109,9 @@ class TxtRegistryContext implements DnsRegistryContext {
           'external-dns/owner': this.registry.ownerId,
         };
         newTxtLabels.set(txtName, existingLabels);
+      } else if (this.registry.autoAdoptFrom.includes(existingLabels['external-dns/owner'])) {
+        console.error('"Adopting" record', recordName, 'from', existingLabels['external-dns/owner']);
+        existingLabels['external-dns/owner'] = this.registry.ownerId;
       }
       return existingLabels;
     }
@@ -147,6 +156,7 @@ class TxtRegistryContext implements DnsRegistryContext {
     for (const [txtName, labels] of newTxtLabels) {
       const hasTypes = Object.keys(labels).some(x => x.startsWith('record-type/'));
       delete labels['is-ours'];
+      delete labels['is-adoptable'];
 
       const existingEndpoint = this.heritageRecords.get(txtName);
       const newEndpoint: Endpoint | null = hasTypes ? {
