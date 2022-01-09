@@ -148,7 +148,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build . \
+          docker buildx build . \
             --cache-from ghcr.io/${{ github.repository }} \
             --file Dockerfile.multiarch \
             --tag built-image
