@@ -160,6 +160,6 @@ jobs:
           dockerfile: Dockerfile.multiarch
           push: false
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.push_ghcr.outputs.docker_image }}
+          tags: ${{ steps.name.outputs.image }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
