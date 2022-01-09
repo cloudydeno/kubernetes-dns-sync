@@ -113,3 +113,59 @@ jobs:
     outputs:
       ghcr_image: ${{ steps.push_ghcr.outputs.docker_image }}
       gcr_image: ${{ steps.push_gcr.outputs.docker_image }}
+
+
+  push-multiarch:
+    needs: check
+    runs-on: ubuntu-latest
+    name: 'Push multi-arch image'
+    # if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+
+      - name: Log into GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Pull latest image for cache
+      #   run: docker pull ghcr.io/${{ github.repository }}
+
+      - name: Build image
+        run: |
+          docker build . \
+            --cache-from ghcr.io/${{ github.repository }} \
+            --file Dockerfile \
+            --tag built-image
+
+      - name: Inspect image
+        run: docker images built-image
+
+      # - name: Push image to GitHub Container Registry
+      #   id: push_ghcr
+      #   run: |
+      #     IMAGE_ID=ghcr.io/${{ github.repository }}
+      #     IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+      #     VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+      #     [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+      #     [ "$VERSION" == "main" ] && VERSION=latest
+
+      #     docker tag built-image $IMAGE_ID:$VERSION
+      #     docker push $IMAGE_ID:$VERSION
+
+      #     echo "Pushed $IMAGE_ID:$VERSION"
+      #     echo "::set-output name=docker_image::$IMAGE_ID:$VERSION"
+
+    outputs:
+      ghcr_image: ${{ steps.push_ghcr.outputs.docker_image }}
