@@ -19,6 +19,7 @@ jobs:
         # v1.14 and earlier unsupported by /x/observability@v0.1.2
         - v1.15
         - v1.16
+        - v1.17
         - canary
       fail-fast: false # run each branch to completion
 
@@ -37,7 +38,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/.cache/deno/deps/https
-        key: deno-https/v1-${{ github.sha }}
+        key: deno/${{ matrix.deno-version }}-https/v1-${{ github.sha }}
         restore-keys: deno-https/v1-
 
     - name: Check controller/mod.ts
