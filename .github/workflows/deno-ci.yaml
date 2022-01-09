@@ -146,30 +146,47 @@ jobs:
       # - name: Pull latest image for cache
       #   run: docker pull ghcr.io/${{ github.repository }}
 
-      - name: Build image
+      - name: Build image (amd64)
         run: |
           docker buildx build . \
-            --cache-from ghcr.io/${{ github.repository }} \
+            --cache-from cached-image:amd64 \
             --file Dockerfile.multiarch \
-            --tag built-image
+            --platform linux/amd64 \
+            --tag built-image:amd64
 
-      - name: Inspect image
-        run: docker images built-image
+      - name: Build image (arm64)
+        run: |
+          docker buildx build . \
+            --cache-from cached-image:arm64 \
+            --file Dockerfile.multiarch \
+            --platform linux/arm64 \
+            --tag built-image:arm64
 
-      # - name: Push image to GitHub Container Registry
-      #   id: push_ghcr
-      #   run: |
-      #     IMAGE_ID=ghcr.io/${{ github.repository }}
-      #     IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-      #     VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-      #     [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-      #     [ "$VERSION" == "main" ] && VERSION=latest
+      - name: Inspect images
+        run: docker images # | grep built-image
 
-      #     docker tag built-image $IMAGE_ID:$VERSION
-      #     docker push $IMAGE_ID:$VERSION
+      - name: Create manifest
+        run: |
+          docker manifest create built-image \
+            built-image:amd64 built-image:arm64
 
-      #     echo "Pushed $IMAGE_ID:$VERSION"
-      #     echo "::set-output name=docker_image::$IMAGE_ID:$VERSION"
+      - name: Inspect images
+        run: docker images # | grep built-image
+
+      - name: Push image to GitHub Container Registry
+        id: push_ghcr
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository }}
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          [ "$VERSION" == "main" ] && VERSION=latest
+
+          docker tag built-image $IMAGE_ID:$VERSION-multiarch
+          docker push $IMAGE_ID:$VERSION-multiarch
+
+          echo "Pushed $IMAGE_ID:$VERSION-multiarch"
+          echo "::set-output name=docker_image::$IMAGE_ID:$VERSION-multiarch"
 
     outputs:
       ghcr_image: ${{ steps.push_ghcr.outputs.docker_image }}
