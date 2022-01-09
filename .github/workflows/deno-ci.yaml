@@ -39,7 +39,7 @@ jobs:
       with:
         path: ~/.cache/deno/deps/https
         key: deno/${{ matrix.deno-version }}-https/v1-${{ github.sha }}
-        restore-keys: deno-https/v1-
+        restore-keys: deno/${{ matrix.deno-version }}-https/v1-
 
     - name: Check controller/mod.ts
       run: time deno cache --reload controller/mod.ts
