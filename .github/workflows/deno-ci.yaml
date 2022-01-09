@@ -123,6 +123,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Prep multiarch Dockerfile
+        run: |
+          sed s@denoland/deno:alpine-@lukechannings/deno:v@ Dockerfile > Dockerfile.multiarch
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -146,7 +149,7 @@ jobs:
         run: |
           docker build . \
             --cache-from ghcr.io/${{ github.repository }} \
-            --file Dockerfile \
+            --file Dockerfile.multiarch \
             --tag built-image
 
       - name: Inspect image
