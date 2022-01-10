@@ -93,7 +93,7 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     name: 'Push multi-arch image'
-    # if: github.event_name == 'push'
+    if: github.event_name == 'push'
 
     steps:
 
