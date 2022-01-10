@@ -41,22 +41,33 @@ for await (const tickSource of createTickStream(config, sources)) {
 
   for (const provider of providers) {
     const providerId = provider.config.type;
-    const providerCtx = await provider.NewContext();
-    const registryCtx = registry.NewContext(providerCtx.Zones);
+    // const providerCtx = await provider.NewContext();
+    // const registryCtx = registry.NewContext(providerCtx.Zones);
 
-    const rawChanges = await discoverProviderChanges(registryCtx, providerId, providerCtx, sourceRecords);
+    const rawChanges = await discoverProviderChanges(registry, providerId, provider, sourceRecords);
+    let skipped = false;
+    for (const diff of rawChanges) {
 
-    if (rawChanges.length === 0) {
-      console.log(p2, 'Provider', providerId, 'has no necesary changes.');
-      continue;
+      if (diff.toCreate.length === 0 && diff.toDelete.length === 0) {
+        console.log(p2, 'Provider', providerId, 'has no necesary changes for', diff.state.Zone.DNSName);
+        continue;
+      }
+
+      printChanges(diff);
+      if (!confirmBeforeApplyingChanges()) {
+        skipped = true;
+        continue;
+      }
+
+      console.log(p1, 'Submitting', diff.toCreate.length, 'to create,', diff.toDelete.length, 'to delete', 'to', providerId, 'for', diff.state.Zone.DNSName, '...');
+      await provider.ApplyChanges(diff);
     }
 
-    printChanges(rawChanges);
-    if (!confirmBeforeApplyingChanges()) continue;
-
-    console.log(p1, 'Submitting', ...rawChanges.summary, 'to', providerId, '...');
-    await providerCtx.ApplyChanges(rawChanges);
-    console.log(p2, 'Provider', providerId, 'is now up to date.');
+    if (skipped) {
+      console.log(p2, 'Provider', providerId, 'is done synced. Not all desired actions were taken.');
+    } else {
+      console.log(p2, 'Provider', providerId, 'is now up to date.');
+    }
   }
 
   console.log();

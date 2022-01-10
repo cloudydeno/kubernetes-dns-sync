@@ -1,4 +1,4 @@
-import { AcmeCrdSourceConfig, DnsSource, Endpoint, WatchLister } from "../common/mod.ts";
+import { AcmeCrdSourceConfig, DnsSource, SourceRecord, WatchLister } from "../common/mod.ts";
 import { AcmeCertManagerIoV1Api, KubernetesClient } from '../deps.ts';
 
 /**
@@ -22,18 +22,26 @@ export class AcmeCrdSource implements DnsSource {
     opts => this.crdApi.watchChallengeListForAllNamespaces({ ...opts }),
     crd => [crd.metadata?.annotations, crd.spec]);
 
-  async Endpoints() {
-    const endpoints = new Array<Endpoint>();
+  #finalizers = new Map<string, () => Promise<unknown>>();
+
+  async ListRecords() {
+    const endpoints = new Array<SourceRecord>();
 
     for await (const challenge of this.watchLister.getFreshList(this.config.annotation_filter)) {
-      if (!challenge.metadata?.name || !challenge.metadata?.namespace) continue;
-      if (!challenge.spec.key || !challenge.spec.dnsName) continue;
+      const {name, namespace, annotations} = challenge.metadata;
+      if (!name || !namespace) continue;
+
+      const {key, dnsName, solver, wildcard} = challenge.spec;
+      if (!key || !dnsName) continue;
+
       // How we know which Challenges are for us...
-      if (challenge.spec.solver.dns01?.webhook?.solverName !== 'kubernetes-dns-sync') continue;
+      if (solver.dns01?.webhook?.solverName !== 'kubernetes-dns-sync') continue;
+
+      const resourceKey = `acme/${namespace}/${name}`;
 
       // Require extra config to allow wildcard domains
-      if (challenge.spec.wildcard && this.config.allow_wildcards == false) {
-        console.error(`ACME Challenge ${challenge.metadata.namespace}/${challenge.metadata.name} is for a wildcard, which isn't allowed by our configuration`);
+      if (wildcard && this.config.allow_wildcards == false) {
+        console.error(`ACME Challenge ${namespace}/${name} is for a wildcard, but that isn't allowed by dns-sync's configuration`);
         continue;
       }
 
@@ -41,24 +49,31 @@ export class AcmeCrdSource implements DnsSource {
       if (challenge.status?.state == 'pending' && challenge.status?.processing && !challenge.status?.presented) {
         challenge.status.presented = true;
         challenge.status.reason = 'kubernetes-dns-sync accepted record';
-
-        await this.crdApi
-          .namespace(challenge.metadata.namespace)
-          .replaceChallengeStatus(challenge.metadata.name, challenge);
+        this.#finalizers.set(resourceKey, () => this.crdApi
+          .namespace(namespace)
+          .replaceChallengeStatus(name, challenge));
       }
 
       // Furnish the verification record
       endpoints.push({
-        DNSName: '_acme-challenge.' + challenge.spec.dnsName,
-        RecordType: 'TXT',
-        Targets: [challenge.spec.key],
-        Labels: {
-          'external-dns/resource': `acme/${challenge.metadata.namespace}/${challenge.metadata.name}`,
-        },
-        RecordTTL: this.config.challenge_ttl ?? undefined,
-      });
+        resourceKey,
+        annotations: annotations ?? {},
+        dns: {
+          type: 'TXT',
+          content: key,
+          fqdn: `_acme-challenge.${dnsName.replace(/\.$/, '')}`,
+          ttl: this.config.challenge_ttl,
+        }});
     }
     return endpoints;
+  }
+
+  async ObserveResource(resourceKey: string) {
+    const finalizer = this.#finalizers.get(resourceKey);
+    if (finalizer) {
+      this.#finalizers.delete(resourceKey);
+      await finalizer();
+    }
   }
 
   MakeEventSource() {

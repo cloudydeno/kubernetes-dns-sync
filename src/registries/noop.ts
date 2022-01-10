@@ -1,28 +1,29 @@
 import {
   NoopRegistryConfig,
-  DnsRegistry, DnsRegistryContext,
-  Zone, Changes, Endpoint,
+  DnsRegistry,
+  BaseRecord, ZoneState,
 } from "../common/mod.ts";
 
-/** Does absolutely nothing about record ownership. */
-export class NoopRegistry implements DnsRegistry<NoopRegistryContext> {
+/**
+ * Does absolutely nothing about record ownership.
+ * All discovered records are treated as ours, and we are willing to modify any FQDN.
+ * EXCEPTION: SOA/NS records at the root are ignored.
+ * If you want to manage root SOA/NS without a TXT registry, file an issue.
+ */
+export class NoopRegistry<T extends BaseRecord> implements DnsRegistry<T,T> {
 
   constructor(public config: NoopRegistryConfig) {}
 
-  NewContext(zones: Zone[]) {
-    return new NoopRegistryContext(this);
-  }
-}
-
-class NoopRegistryContext implements DnsRegistryContext {
-  constructor(private registry: NoopRegistry) {}
-
-  RecognizeLabels(raw: Endpoint[]): Promise<Endpoint[]> {
-    return Promise.resolve(raw);
+  RecognizeLabels(provider: ZoneState<T>): Promise<ZoneState<T>> {
+    return Promise.resolve({
+      Zone: provider.Zone,
+      Existing: provider.Existing.filter(x =>
+        !(x.dns.fqdn == provider.Zone.DNSName && ['SOA','NS'].includes(x.dns.type))),
+    });
   }
 
-  CommitLabels(changes: Changes): Promise<Changes> {
-    return Promise.resolve(changes);
+  CommitLabels(inner: ZoneState<T>): Promise<ZoneState<T>> {
+    return Promise.resolve(inner);
   }
 
 }

@@ -17,48 +17,48 @@ import { NodeSource } from '../sources/node.ts';
 
 import { GoogleProvider } from '../providers/google/mod.ts';
 import { VultrProvider } from '../providers/vultr/mod.ts';
-import { PowerDnsProvider } from "../providers/powerdns/mod.ts";
+// import { PowerDnsProvider } from "../providers/powerdns/mod.ts";
 
 import { TxtRegistry } from "../registries/txt.ts";
 import { NoopRegistry } from "../registries/noop.ts";
 
 const kubernetesClient = await autoDetectKubernetesClient();
 
-export function source(source: SourceConfig) {
-  switch (source.type) {
+export function source(config: SourceConfig) {
+  switch (config.type) {
     case 'ingress':
-      return new IngressSource(source, kubernetesClient);
+      return new IngressSource(config, kubernetesClient);
     case 'crd':
-      return new CrdSource(source, kubernetesClient);
+      return new CrdSource(config, kubernetesClient);
     case 'acme-crd':
-      return new AcmeCrdSource(source, kubernetesClient);
+      return new AcmeCrdSource(config, kubernetesClient);
     case 'node':
-      return new NodeSource(source, kubernetesClient);
+      return new NodeSource(config, kubernetesClient);
     default:
-      throw new Error(`Invalid source 'type' ${(source as any).type}`);
+      throw new Error(`Invalid source 'type' ${(config as any).type}`);
   }
 };
 
-export function provider(provider: ProviderConfig) {
-  switch (provider.type) {
+export function provider(config: ProviderConfig) {
+  switch (config.type) {
     case 'google':
-      return new GoogleProvider(provider);
+      return new GoogleProvider(config);
     case 'vultr':
-      return new VultrProvider(provider);
-    case 'powerdns':
-      return new PowerDnsProvider(provider);
+      return new VultrProvider(config);
+    // case 'powerdns':
+    //   return new PowerDnsProvider(config);
     default:
-      throw new Error(`Invalid provider 'type' ${(provider as any).type}`);
+      throw new Error(`Invalid provider 'type' ${(config as any).type}`);
   }
 };
 
-export function registry(registry: RegistryConfig) {
-  switch (registry.type) {
+export function registry(config: RegistryConfig) {
+  switch (config.type) {
     case 'txt':
-      return new TxtRegistry(registry);
+      return new TxtRegistry(config);
     case 'noop':
-      return new NoopRegistry(registry);
+      return new NoopRegistry(config);
     default:
-      throw new Error(`Invalid registry 'type' ${(registry as any).type}`);
+      throw new Error(`Invalid registry 'type' ${(config as any).type}`);
   }
 };

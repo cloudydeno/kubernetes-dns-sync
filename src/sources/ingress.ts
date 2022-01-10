@@ -1,4 +1,4 @@
-import { IngressSourceConfig, DnsSource, Endpoint, SplitByIPVersion, WatchLister } from "../common/mod.ts";
+import { IngressSourceConfig, DnsSource, SourceRecord, WatchLister, splitIntoV4andV6, PlainRecordHostname } from "../common/mod.ts";
 import { KubernetesClient, NetworkingV1Api } from '../deps.ts';
 
 export class IngressSource implements DnsSource {
@@ -15,17 +15,11 @@ export class IngressSource implements DnsSource {
     opts => this.networkingApi.getIngressListForAllNamespaces({ ...opts }),
     opts => this.networkingApi.watchIngressListForAllNamespaces({ ...opts }));
 
-  async Endpoints() {
-    const endpoints = new Array<Endpoint>();
+  async ListRecords() {
+    const endpoints = new Array<SourceRecord>();
 
     for await (const node of this.watchLister.getFreshList(this.config.annotation_filter)) {
       if (!node.metadata || !node.spec?.rules || !node.status?.loadBalancer?.ingress) continue;
-
-      const [ttl] = Object
-        .entries(node.metadata.annotations ?? {})
-        .flatMap(x => x[0] === 'external-dns.alpha.kubernetes.io/ttl'
-          ? [parseInt(x[1])]
-          : []);
 
       for (const rule of node.spec.rules) {
         if (!rule.host) continue;
@@ -34,26 +28,23 @@ export class IngressSource implements DnsSource {
         const addresses = node.status.loadBalancer.ingress
           .flatMap(x => x.ip ? [x.ip] : []);
 
-        if (hostnames.length > 0) {
+        const records = hostnames.length > 0
+          ? hostnames.map<PlainRecordHostname>(
+              hostname => ({
+                type: 'CNAME',
+                target: hostname,
+              }))
+          : splitIntoV4andV6(addresses);
+
+        if (!records.length) continue;
+        for (const record of records) {
           endpoints.push({
-            DNSName: rule.host,
-            RecordType: 'CNAME',
-            Targets: hostnames,
-            RecordTTL: ttl,
-            Labels: {
-              'external-dns/resource': `ingress/${node.metadata.namespace}/${node.metadata.name}`,
-            },
-          });
-        } else if (addresses.length > 0) {
-          endpoints.push(...SplitByIPVersion({
-            DNSName: rule.host,
-            RecordType: 'A',
-            Targets: addresses,
-            RecordTTL: ttl,
-            Labels: {
-              'external-dns/resource': `ingress/${node.metadata.namespace}/${node.metadata.name}`,
-            },
-          }));
+            annotations: node.metadata.annotations ?? {},
+            resourceKey: `ingress/${node.metadata.namespace}/${node.metadata.name}`,
+            dns: {
+              fqdn: rule.host.replace(/\.$/, ''),
+              ...record,
+            }});
         }
       }
 
