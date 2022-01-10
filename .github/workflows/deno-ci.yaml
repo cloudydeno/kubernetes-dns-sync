@@ -19,6 +19,7 @@ jobs:
         # v1.14 and earlier unsupported by /x/observability@v0.1.2
         - v1.15
         - v1.16
+        - v1.17
         - canary
       fail-fast: false # run each branch to completion
 
@@ -41,7 +42,7 @@ jobs:
         restore-keys: deno-https/v1-
 
     - name: Check controller/mod.ts
-      run: time deno cache --reload controller/mod.ts
+      run: time deno cache controller/mod.ts
 
     - name: Run test suite
       run: time deno test
@@ -55,7 +56,16 @@ jobs:
     if: github.event_name == 'push'
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Determine image name
+        id: name
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository }}
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          [ "$VERSION" == "main" ] && VERSION=latest
+          echo "Will push to $IMAGE_ID:$VERSION"
+          echo "::set-output name=image::$IMAGE_ID:$VERSION"
 
       - name: Log into GitHub Container Registry
         uses: docker/login-action@v1
@@ -63,53 +73,67 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
-      - name: Log into Google Container Registry
-        uses: docker/login-action@v1
+
+      - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build and push
+        uses: docker/build-push-action@v2.7.0
         with:
-          registry: gcr.io
-          username: _json_key
-          password: ${{ secrets.GCP_SA_KEY }}
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.name.outputs.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Pull latest image for cache
-        run: docker pull ghcr.io/${{ github.repository }}
+  push-multiarch:
+    needs: check
+    runs-on: ubuntu-latest
+    name: 'Push multi-arch image'
+    if: github.event_name == 'push'
 
-      - name: Build image
-        run: |
-          docker build . \
-            --cache-from ghcr.io/${{ github.repository }} \
-            --file Dockerfile \
-            --tag built-image
+    steps:
 
-      - name: Inspect image
-        run: docker images built-image
-
-      - name: Push image to GitHub Container Registry
-        id: push_ghcr
+      - name: Determine image name
+        id: name
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository }}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          [ "$VERSION" == "main" ] && VERSION=latest
+          TAG=$VERSION-multiarch
+          [ "$TAG" == "main-multiarch" ] && TAG=multiarch
+          echo "Will push to $IMAGE_ID:$TAG"
+          echo "::set-output name=image::$IMAGE_ID:$TAG"
 
-          docker tag built-image $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+      - name: Log into GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-          echo "Pushed $IMAGE_ID:$VERSION"
-          echo "::set-output name=docker_image::$IMAGE_ID:$VERSION"
-
-      - name: Push image to Google Container Registry
-        id: push_gcr
+      - uses: actions/checkout@v2
+      - name: Prep multiarch Dockerfile
         run: |
-          IMAGE_ID=gcr.io/stardust-156404/${{ github.repository }}
-          VERSION=${{ github.sha }}
+          sed s@denoland/deno:alpine-@lukechannings/deno:v@ Dockerfile > Dockerfile.multiarch
 
-          docker tag built-image $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
 
-          echo "Pushed $IMAGE_ID:$VERSION"
-          echo "::set-output name=docker_image::$IMAGE_ID:$VERSION"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-    outputs:
-      ghcr_image: ${{ steps.push_ghcr.outputs.docker_image }}
-      gcr_image: ${{ steps.push_gcr.outputs.docker_image }}
+      - name: Build and push
+        uses: docker/build-push-action@v2.7.0
+        with:
+          context: .
+          file: Dockerfile.multiarch
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.name.outputs.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
