@@ -1,9 +1,9 @@
 # kubernetes-dns-sync
 
-[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fdep-count%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fcontroller%2Fmod.ts)][deno-vis]
-[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fupdates%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fcontroller%2Fmod.ts)][deno-vis]
+[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fdep-count%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fsrc%2Fcontroller%2Fmod.ts)][deno-vis]
+[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fupdates%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fsrc%2Fcontroller%2Fmod.ts)][deno-vis]
 
-[deno-vis]: https://deno-visualizer.danopia.net/dependencies-of/https/raw.githubusercontent.com/cloudydeno/kubernetes-dns-sync/main/controller/mod.ts?rankdir=LR
+[deno-vis]: https://deno-visualizer.danopia.net/dependencies-of/https/raw.githubusercontent.com/cloudydeno/kubernetes-dns-sync/main/src/controller/mod.ts?rankdir=LR
 
 ## Work In Progress!!
 
