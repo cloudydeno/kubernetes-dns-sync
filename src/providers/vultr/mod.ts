@@ -2,9 +2,8 @@ import { ttlFromAnnotations } from "../../common/annotations.ts";
 import {
   VultrProviderConfig,
   DnsProvider,
-  Zone, SourceRecord, BaseRecord, ZoneState, getPlainRecordKey, buildDiff, ZoneDiff,
+  Zone, SourceRecord, BaseRecord, getPlainRecordKey, ZoneDiff,
 } from "../../common/mod.ts";
-// import { OpaquelyIdentifiedProviderContext, RecordEndpoint } from "../opaquely-identified.ts";
 import { VultrApi, VultrApiSurface } from "./api.ts";
 
 type VultrRecord = BaseRecord & {
@@ -93,7 +92,7 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
     console.error(`TODO: unsupported record type ${record.dns.type} desired for Vultr zone at ${record.dns.fqdn}`);
     return null; // toss unsupported records
   }
-  
+
   ComparisionKey(record: VultrRecord): string {
     // vultr has no extra config stored with DNS records
     return JSON.stringify(getPlainRecordKey(record.dns));

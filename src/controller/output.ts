@@ -1,12 +1,11 @@
+import { buildDiff } from "../common/diff.ts";
 import {
-  Endpoint, Changes,
   DnsProvider,
   DnsRegistry,
-ZoneDiff,
-SourceRecord,
-BaseRecord,
-ZoneState,
-buildDiff,
+  ZoneDiff,
+  SourceRecord,
+  BaseRecord,
+  ZoneState,
 } from "../common/mod.ts";
 // import { Planner } from "./planner.ts";
 

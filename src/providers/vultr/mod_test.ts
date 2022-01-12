@@ -1,7 +1,7 @@
 import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
 
 import { SourceRecord } from "../../common/contract.ts";
-import { buildDiff } from "../../common/endpoints.ts";
+import { buildDiff } from "../../common/diff.ts";
 import { VultrApiMock } from "./mock.ts";
 import { VultrProvider } from "./mod.ts";
 
