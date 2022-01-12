@@ -1,13 +1,13 @@
 export interface DnsProvider<
 	Trecord extends BaseRecord,
 > {
-	// Zones: Zone[];
-	// ComparableFields: Array<string & keyof Trecord>;
 	ListZones(): Promise<Array<Zone>>;
 	ListRecords(zone: Zone): Promise<Array<Trecord>>;
+	ApplyChanges(diff: ZoneDiff<Trecord>): Promise<void>;
+
 	EnrichSourceRecord(record: SourceRecord): Trecord | null;
 	ComparisionKey(record: Trecord): string;
-	ApplyChanges(diff: ZoneDiff<Trecord>): Promise<void>;
+	GroupingKey(record: Trecord): string;
 }
 
 // Source defines the interface Endpoint sources should implement.

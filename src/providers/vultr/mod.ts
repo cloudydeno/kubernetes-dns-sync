@@ -2,9 +2,9 @@ import { ttlFromAnnotations } from "../../common/annotations.ts";
 import {
   VultrProviderConfig,
   DnsProvider,
-  Zone, SourceRecord, BaseRecord, getPlainRecordKey, ZoneDiff,
+  Zone, SourceRecord, BaseRecord, getPlainRecordKey, ZoneDiff, PlainRecord,
 } from "../../common/mod.ts";
-import { VultrApi, VultrApiSurface } from "./api.ts";
+import { DnsRecord, DnsRecordData, VultrApi, VultrApiSurface } from "./api.ts";
 
 type VultrRecord = BaseRecord & {
   // zone: string;
@@ -36,49 +36,19 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
     return zones;
   }
 
-  // findZoneForName(dnsName: string): Zone | undefined {
-  //   const matches = this.Zones.filter(x => x.DNSName == dnsName || dnsName.endsWith('.'+x.DNSName));
-  //   return matches.sort((a,b) => b.DNSName.length - a.DNSName.length)[0];
-  // }
-
   async ListRecords(zone: Zone): Promise<VultrRecord[]> {
     const records = new Array<VultrRecord>();
     for await (const record of this.api.listAllRecords(zone.DNSName)) {
-      const recordId = record.id;
-      const ttl = record.ttl >= 0 ? record.ttl : undefined;
-      const type = record.type as keyof typeof supportedRecords; // this is a lie to get types to help us out more
-      const fqdn = record.name ? `${record.name}.${zone.DNSName}` : zone.DNSName;
-
-      switch (type) {
-        case 'A':
-        case 'AAAA':
-        case 'NS':
-        case 'CNAME':
-          records.push({ recordId, dns: {
-            type, ttl, fqdn,
-            target: record.data,
-          }});
-          break;
-        case 'TXT':
-          records.push({ recordId, dns: {
-            type, ttl, fqdn,
-            content: record.data.slice(1, -1),
-          }});
-          break;
-        case 'MX':
-          records.push({ recordId, dns: {
-            type, ttl, fqdn,
-            priority: record.priority,
-            target: record.data,
-          }});
-          break;
-        default:
-          console.error(`TODO: unsupported record type ${type} observed in Vultr zone at ${fqdn}`);
-          const _: never = type;
-      }
+      const recordData = transformFromApi(zone.DNSName, record);
+      if (!recordData) continue;
+      records.push({
+        recordId: record.id,
+        dns: recordData,
+      });
     }
     return records;
   }
+
   EnrichSourceRecord(record: SourceRecord): VultrRecord | null {
     if (record.dns.type in supportedRecords) {
       return {
@@ -97,60 +67,92 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
     // vultr has no extra config stored with DNS records
     return JSON.stringify(getPlainRecordKey(record.dns));
   }
+  GroupingKey(record: VultrRecord): string {
+    // only "type" is immutable in the API. we also include FQDN to reduce confusion
+    return JSON.stringify([record.dns.fqdn, record.dns.type]);
+  }
 
   async ApplyChanges(diff: ZoneDiff<VultrRecord>): Promise<void> {
     for (const deletion of diff.toDelete) {
       if (!deletion.recordId) throw new Error(`BUG: deleting ID-less Vultr record`);
-      await this.deleteRecord(diff.state.Zone, deletion.recordId);
+      await this.api.deleteRecord(diff.state.Zone.ZoneID, deletion.recordId);
     }
     for (const creation of diff.toCreate) {
       if (creation.recordId) throw new Error(`BUG: creating ID-having Vultr record`);
-      await this.createRecord(diff.state.Zone, creation);
+      const record = transformForApi(diff.state.Zone.DNSName, creation.dns);
+      await this.api.createRecord(diff.state.Zone.ZoneID, record);
     }
   }
+}
 
-  async createRecord(zone: Zone, record: VultrRecord) {
-    const {dns} = record;
-    if (!dns.fqdn.endsWith(zone.DNSName)) throw new Error(
-      `BUG: createRecord ${dns.fqdn} given different zone ${zone.DNSName}`);
-    const subdomain = dns.fqdn == zone.DNSName ? '' : dns.fqdn.slice(0, -zone.DNSName.length - 1);
 
-    switch (dns.type) {
-      case 'A':
-      case 'AAAA':
-      case 'NS':
-      case 'CNAME':
-        await this.api.createRecord(zone.ZoneID, {
-          name: subdomain,
-          type: dns.type,
-          data: dns.target,
-          ttl: dns.ttl ?? undefined,
-        });
-        break;
-      case 'TXT':
-        await this.api.createRecord(zone.ZoneID, {
-          name: subdomain,
-          type: dns.type,
-          data: `"${dns.content}"`,
-          ttl: dns.ttl ?? undefined,
-        });
-        break;
-      case 'MX':
-        await this.api.createRecord(zone.ZoneID, {
-          name: subdomain,
-          type: dns.type,
-          data: dns.target,
-          ttl: dns.ttl ?? undefined,
-          priority: dns.priority,
-        });
-        break;
-      default:
-        const _: never = dns;
-        throw new Error(`BUG: unsupported record ${JSON.stringify(dns)} desired in Vultr zone`);
-    }
+function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | false {
+  // this is a lie to get types to help us out more:
+  const type = record.type as keyof typeof supportedRecords;
+
+  const ttl = record.ttl >= 0 ? record.ttl : undefined;
+  const fqdn = record.name ? `${record.name}.${zoneFqdn}` : zoneFqdn;
+
+  switch (type) {
+    case 'A':
+    case 'AAAA':
+    case 'NS':
+    case 'CNAME':
+      return {
+        type, ttl, fqdn,
+        target: record.data,
+      };
+    case 'TXT':
+      return {
+        type, ttl, fqdn,
+        content: record.data.slice(1, -1),
+      };
+    case 'MX':
+      return {
+        type, ttl, fqdn,
+        priority: record.priority,
+        target: record.data,
+      };
+    default:
+      console.error(`TODO: unsupported record type ${type} observed in Vultr zone at ${fqdn}`);
+      const _: never = type;
   }
+  return false;
+}
 
-  async deleteRecord(zone: Zone, recordId: string) {
-    await this.api.deleteRecord(zone.ZoneID, recordId);
+function transformForApi(zoneFqdn: string, dns: PlainRecord): DnsRecordData {
+  if (!dns.fqdn.endsWith(zoneFqdn)) throw new Error(
+    `BUG: Vultr given wrong zone ${zoneFqdn} for record ${dns.fqdn}`);
+  const subdomain = dns.fqdn == zoneFqdn ? '' : dns.fqdn.slice(0, -zoneFqdn.length - 1);
+
+  switch (dns.type) {
+    case 'A':
+    case 'AAAA':
+    case 'NS':
+    case 'CNAME':
+      return {
+        name: subdomain,
+        type: dns.type,
+        data: dns.target,
+        ttl: dns.ttl ?? undefined,
+      };
+    case 'TXT':
+      return {
+        name: subdomain,
+        type: dns.type,
+        data: `"${dns.content}"`,
+        ttl: dns.ttl ?? undefined,
+      };
+    case 'MX':
+      return {
+        name: subdomain,
+        type: dns.type,
+        data: dns.target,
+        ttl: dns.ttl ?? undefined,
+        priority: dns.priority,
+      };
+    default:
+      const _: never = dns;
   }
+  throw new Error(`BUG: unsupported record ${JSON.stringify(dns)} desired in Vultr zone`);
 }
