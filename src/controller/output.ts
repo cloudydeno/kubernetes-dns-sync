@@ -2,7 +2,6 @@ import { buildDiff } from "../common/diff.ts";
 import {
   DnsProvider,
   DnsRegistry,
-  ZoneDiff,
   SourceRecord,
   BaseRecord,
   ZoneState,
@@ -46,7 +45,7 @@ export async function discoverProviderChanges<T extends BaseRecord>(
   const zoneList = await providerCtx.ListZones();
   console.log(p2, 'Found', zoneList.length, 'DNS zones:', zoneList.map(x => x.DNSName));
 
-  const byZone = new Array<ZoneDiff<T>>();
+  const byZone = new Array<ZoneState<T>>();
   for (const zone of zoneList) {
     console.log(p3, 'Loading existing records from', providerId, zone.DNSName, '...');
     const rawState: ZoneState<T> = {
@@ -65,51 +64,60 @@ export async function discoverProviderChanges<T extends BaseRecord>(
     console.log(p3, 'Encoding changed ownership labels...');
     const outerState = await registryCtx.CommitLabels(innerState);
 
-    const diff = buildDiff(outerState, x => providerCtx.ComparisionKey(x));
-    console.log(p3, 'Planner changes:', diff.toCreate.length, 'to create,', diff.toDelete.length, 'to delete');
+    outerState.Diff = buildDiff(outerState, providerCtx);
+    const toCreate = outerState.Diff.filter(x => x.type == 'creation').length;
+    const toUpdate = outerState.Diff.filter(x => x.type == 'update').length;
+    const toDelete = outerState.Diff.filter(x => x.type == 'deletion').length;
+    console.log(p3, 'Planner changes:', toCreate, 'to create,', toUpdate, 'to update,', toDelete, 'to delete');
 
-    byZone.push(diff);
+    byZone.push(outerState);
   }
   return byZone;
 }
 
-export function printChanges<T extends BaseRecord>(changes: ZoneDiff<T>) {
-  for (const rec of changes.toCreate) {
-    console.log(p2, '- Create:', JSON.stringify(rec.dns));
-    // if (rec.RecordType === 'TXT') { // long records
-    //   console.log(p2, '- Create:', rec.RecordType, rec.DNSName);
-    //   for (const targetVal of rec.Targets) {
-    //     console.log(p3, '    new:', targetVal);
-    //   }
-    // } else {
-    //   console.log(p2, '- Create:', rec.RecordType, rec.DNSName, rec.Targets);
-    // }
+export function printChanges<T extends BaseRecord>(changes: ZoneState<T>) {
+
+  for (const change of changes.Diff ?? []) {
+
+    console.log(p2, `- ${change.type}:`, JSON.stringify(change));
   }
 
-  // for (const [recOld, recNew] of changes.Update) {
-  //   if (recOld.RecordType === 'TXT') { // long records
-  //     console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName);
-  //     for (const targetVal of recOld.Targets) {
-  //       console.log(p3, '    old:', targetVal);
-  //     }
-  //     for (const targetVal of recNew.Targets) {
-  //       console.log(p3, '    new:', targetVal);
-  //     }
-  //   } else {
-  //     console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName, recOld.Targets, '->', recNew.Targets);
-  //   }
+  // for (const rec of changes.toCreate) {
+  //   console.log(p2, '- Create:', JSON.stringify(rec.dns));
+  //   // if (rec.RecordType === 'TXT') { // long records
+  //   //   console.log(p2, '- Create:', rec.RecordType, rec.DNSName);
+  //   //   for (const targetVal of rec.Targets) {
+  //   //     console.log(p3, '    new:', targetVal);
+  //   //   }
+  //   // } else {
+  //   //   console.log(p2, '- Create:', rec.RecordType, rec.DNSName, rec.Targets);
+  //   // }
   // }
 
-  for (const rec of changes.toDelete) {
-    // if (rec.dns.type === 'TXT') { // long records
-    //   console.log(p2, '- Delete:', rec.dns.type, rec.dns.fqdn);
-    //   for (const targetVal of rec.Targets) {
-    //     console.log(p3, '    old:', targetVal);
-    //   }
-    // } else {
-    console.log(p2, '- Delete:', JSON.stringify(rec.dns));
-    // }
-  }
+  // // for (const [recOld, recNew] of changes.Update) {
+  // //   if (recOld.RecordType === 'TXT') { // long records
+  // //     console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName);
+  // //     for (const targetVal of recOld.Targets) {
+  // //       console.log(p3, '    old:', targetVal);
+  // //     }
+  // //     for (const targetVal of recNew.Targets) {
+  // //       console.log(p3, '    new:', targetVal);
+  // //     }
+  // //   } else {
+  // //     console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName, recOld.Targets, '->', recNew.Targets);
+  // //   }
+  // // }
+
+  // for (const rec of changes.toDelete) {
+  //   // if (rec.dns.type === 'TXT') { // long records
+  //   //   console.log(p2, '- Delete:', rec.dns.type, rec.dns.fqdn);
+  //   //   for (const targetVal of rec.Targets) {
+  //   //     console.log(p3, '    old:', targetVal);
+  //   //   }
+  //   // } else {
+  //   console.log(p2, '- Delete:', JSON.stringify(rec.dns));
+  //   // }
+  // }
 }
 
 export function confirmBeforeApplyingChanges() {

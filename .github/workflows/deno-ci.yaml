@@ -5,7 +5,10 @@ on:
     branches: [ main ]
     tags: [ v* ]
     paths-ignore:
-      - 'examples/**'
+      - 'helm-chart/**'
+      - 'manifests/**'
+      - 'configs/**'
+      - '*.md'
   pull_request: {}
 
 jobs:
@@ -42,9 +45,11 @@ jobs:
         restore-keys: deno-https/v1-
 
     - name: Check src/controller/mod.ts
+      if: always()
       run: time deno cache src/controller/mod.ts
 
     - name: Run test suite
+      if: always()
       run: time deno test
 
   # Push image to GitHub Packages.

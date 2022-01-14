@@ -2,11 +2,11 @@ import { ttlFromAnnotations } from "../../common/annotations.ts";
 import {
   VultrProviderConfig,
   DnsProvider,
-  Zone, SourceRecord, BaseRecord, getPlainRecordKey, ZoneDiff, PlainRecord,
+  Zone, SourceRecord, BaseRecord, getPlainRecordKey, PlainRecord, ZoneState,
 } from "../../common/mod.ts";
 import { DnsRecord, DnsRecordData, VultrApi, VultrApiSurface } from "./api.ts";
 
-type VultrRecord = BaseRecord & {
+export type VultrRecord = BaseRecord & {
   // zone: string;
   recordId?: string;
 }
@@ -72,15 +72,23 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
     return JSON.stringify([record.dns.fqdn, record.dns.type]);
   }
 
-  async ApplyChanges(diff: ZoneDiff<VultrRecord>): Promise<void> {
-    for (const deletion of diff.toDelete) {
-      if (!deletion.recordId) throw new Error(`BUG: deleting ID-less Vultr record`);
-      await this.api.deleteRecord(diff.state.Zone.ZoneID, deletion.recordId);
-    }
-    for (const creation of diff.toCreate) {
-      if (creation.recordId) throw new Error(`BUG: creating ID-having Vultr record`);
-      const record = transformForApi(diff.state.Zone.DNSName, creation.dns);
-      await this.api.createRecord(diff.state.Zone.ZoneID, record);
+  async ApplyChanges(state: ZoneState<VultrRecord>): Promise<void> {
+    if (!state.Diff) throw new Error(`BUG: missing Diff property`);
+    for (const diff of state.Diff) {
+      for (const deletion of diff.toDelete) {
+        if (!deletion.recordId) throw new Error(`BUG: deleting ID-less Vultr record`);
+        await this.api.deleteRecord(state.Zone.ZoneID, deletion.recordId);
+      }
+      for (const update of diff.toUpdate) {
+        if (!update.existing.recordId) throw new Error(`BUG: updating ID-less Vultr record`);
+        const record = transformForApi(state.Zone.DNSName, update.desired.dns);
+        await this.api.updateRecord(state.Zone.ZoneID, update.existing.recordId, record);
+      }
+      for (const creation of diff.toCreate) {
+        if (creation.recordId) throw new Error(`BUG: creating ID-having Vultr record`);
+        const record = transformForApi(state.Zone.DNSName, creation.dns);
+        await this.api.createRecord(state.Zone.ZoneID, record);
+      }
     }
   }
 }

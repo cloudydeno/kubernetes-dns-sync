@@ -2,7 +2,7 @@ import { ttlFromAnnotations } from "../../common/annotations.ts";
 import {
   GoogleProviderConfig,
   DnsProvider,
-  Zone, Endpoint, Changes, BaseRecord, getPlainRecordKey, SourceRecord, ZoneDiff,
+  Zone, BaseRecord, getPlainRecordKey, SourceRecord, ZoneState, PlainRecord,
 } from "../../common/mod.ts";
 import { GoogleCloudDnsApi,
   Schema$Change,
@@ -58,6 +58,11 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
     // google has no extra config stored with DNS records
     return JSON.stringify(getPlainRecordKey(record.dns));
   }
+  GroupingKey(record: GoogleRecord): string {
+    // This 'should' line up with how Google recordsets are
+    return JSON.stringify([record.dns.fqdn, record.dns.type]);
+  }
+
   EnrichSourceRecord(record: SourceRecord): GoogleRecord | null {
     if (!(record.dns.type in supportedRecords)) {
       console.error(`TODO: unsupported record type ${record.dns.type} desired for Google zone at ${record.dns.fqdn}`);
@@ -126,74 +131,33 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
     return endpoints;
   }
 
-  async ApplyChanges(diff: ZoneDiff<GoogleRecord>): Promise<void> {
-    const zone = diff.state.Zone;
+  async ApplyChanges(state: ZoneState<GoogleRecord>): Promise<void> {
+    const zone = state.Zone;
 
-    const change: Schema$Change = {
-      kind: "dns#change",
-      additions: [],
-      deletions: Array.from(new Set(diff
-        .toDelete.map(x => x.recordSet)
-        .flatMap(x => x ? [x] : []))),
+    const change = {
+      kind: "dns#change" as const,
+      additions: new Array<Schema$ResourceRecordSet>(),
+      deletions: new Array<Schema$ResourceRecordSet>(),
     };
 
-    const neededSets = new Set([
-      ...diff.toCreate,
-      ...diff.toDelete,
-    ].map(x => JSON.stringify([x.dns.fqdn, x.dns.type])));
+    for (const diff of state.Diff ?? []) {
+      // If there's anything we want to change, we have to do a full replacement
+      // Making only a creation or only a deletion is only for new or removed rrsets
 
-    for (const neededSet of neededSets) {
-      const [fqdn, type] = JSON.parse(neededSet) as [string, keyof typeof supportedRecords];
-      const desired = diff.state.Desired?.filter(x => x.dns.fqdn == fqdn && x.dns.type == type);
-      if (!desired?.length) continue;
+      if (diff.existing.length) {
+        change.deletions.push(diff.toDelete[0].recordSet!);
+      }
 
-      const kind = 'dns#resourceRecordSet';
-      const name = `${fqdn}.`;
-      const ttls = desired.map(x => x.dns.ttl).flatMap(x => x ? [x] : []);
-      const ttl = ttls.length ? Math.min(...ttls) : 300;
-
-      switch (type) {
-        case 'A':
-        case 'AAAA':
-        {
-          const typedDesired = desired as Array<BaseRecord&{dns: {type: typeof type}}>;
-          change.additions!.push({
-            kind, name, type, ttl,
-            rrdatas: typedDesired.map(x => x.dns.target),
-          });
-        }; break;
-        case 'CNAME':
-        case 'NS':
-        {
-          const typedDesired = desired as Array<BaseRecord&{dns: {type: typeof type}}>;
-          change.additions!.push({
-            kind, name, type, ttl,
-            rrdatas: typedDesired.map(x => `${x.dns.target}.`),
-          });
-        }; break;
-        case 'MX':
-        {
-          const typedDesired = desired as Array<BaseRecord&{dns: {type: typeof type}}>;
-          change.additions!.push({
-            kind, name, type, ttl,
-            rrdatas: typedDesired.map(x => `${x.dns.priority} ${x.dns.target}.`),
-          });
-        }; break;
-        case 'TXT':
-        {
-          const typedDesired = desired as Array<BaseRecord&{dns: {type: typeof type}}>;
-          change.additions!.push({
-            kind, name, type, ttl,
-            rrdatas: typedDesired.map(x => (x.dns.content
-              .match(/.{1,220}/g) ?? [])
-              .map(x => `"${x.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`)
-              .join(' ')),
-          });
-        }; break;
-        // for the future: https://cloud.google.com/dns/docs/reference/json-record
-        default:
-          console.error(`TODO: unsupported record type ${type} desired in Google zone at ${fqdn}`);
-          const _: never = type;
+      if (diff.desired.length) {
+        const {fqdn, type} = diff.desired[0].dns;
+        const ttls = diff.desired.map(x => x.dns.ttl).flatMap(x => x ? [x] : []);
+        change.additions.push({
+          kind: 'dns#resourceRecordSet',
+          name: `${fqdn}.`,
+          type,
+          ttl: ttls.length ? Math.min(...ttls) : 300,
+          rrdatas: diff.desired.map(x => transformToRrdata(x.dns)),
+        });
       }
     }
 
@@ -227,4 +191,27 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
 
   }
 
+}
+
+
+function transformToRrdata(desired: PlainRecord): string {
+  switch (desired.type) {
+    case 'A':
+    case 'AAAA':
+      return desired.target;
+    case 'CNAME':
+    case 'NS':
+      return `${desired.target}.`;
+    case 'MX':
+      return `${desired.priority} ${desired.target}.`;
+    case 'TXT':
+      return (desired.content
+          .match(/.{1,220}/g) ?? [])
+          .map(x => `"${x.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`)
+          .join(' ');
+    // for the future: https://cloud.google.com/dns/docs/reference/json-record
+    default:
+      const _: never = desired;
+  }
+  throw new Error(`BUG: unsupported record ${JSON.stringify(desired)} desired in Google zone`);
 }

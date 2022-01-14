@@ -1,35 +1,74 @@
 import { intersection } from "../deps.ts";
-import { BaseRecord, ZoneState, ZoneDiff } from "./contract.ts";
+import { BaseRecord, ZoneState, DnsProvider, RecordGroupDiff } from "./contract.ts";
 
-export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>, getComparisionKey: (record: Trecord) => string): ZoneDiff<Trecord> {
+// TODO: the grouping/comparision keys should probably be enriched once directly onto the records
+export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>, rules: Pick<DnsProvider<Trecord>, 'GroupingKey' | 'ComparisionKey'>): Array<RecordGroupDiff<Trecord>> {
   if (!state.Desired) throw new Error(`Need Desired to build a diff`);
 
-  const toCreate = new Array<Trecord>();
-  const toDelete = new Array<Trecord>();
+  const changes = new Array<RecordGroupDiff<Trecord>>();
 
-  const existingRecords = new Map(state.Existing.map(x => [getComparisionKey(x), x]));
-  const desiredRecords = new Map(state.Desired.map(x => [getComparisionKey(x), x]));
+  const existingWithGroup = state.Existing.map(x => ({key: rules.ComparisionKey(x), record: x}));
+  const desiredWithGroup = state.Desired.map(x => ({key: rules.ComparisionKey(x), record: x}));
 
-  const matchingRecords = intersection(
-    new Set(existingRecords.keys()),
-    new Set(desiredRecords.keys()));
+  const existingGroups = new Set(existingWithGroup.map(x => x.key));
+  const desiredGroups = new Set(desiredWithGroup.map(x => x.key));
+  const intersectingGroups = intersection(existingGroups, desiredGroups);
 
-  for (const [key, record] of existingRecords) {
-    if (!matchingRecords.has(key)) {
-      toDelete.push(record);
-    }
+  for (const groupKey of existingGroups) {
+    if (intersectingGroups.has(groupKey)) continue;
+    // this is a fully deleted group
+
+    const existing = existingWithGroup.filter(x => x.key == groupKey).map(x => x.record);
+    changes.push({
+      type: 'deletion',
+      existing,
+      desired: [],
+      toDelete: existing,
+      toUpdate: [],
+      toCreate: [],
+    });
   }
-  for (const [key, record] of desiredRecords) {
-    if (!matchingRecords.has(key)) {
-      toCreate.push(record);
-    }
+
+  for (const groupKey of desiredGroups) {
+    if (intersectingGroups.has(groupKey)) continue;
+    // this is a fully created group
+
+    const desired = desiredWithGroup.filter(x => x.key == groupKey).map(x => x.record);
+    changes.push({
+      type: 'deletion',
+      existing: [],
+      desired,
+      toDelete: [],
+      toUpdate: [],
+      toCreate: desired,
+    });
+  }
+
+  for (const groupKey of intersectingGroups) {
+    // this is a modified group
+
+    const existing = existingWithGroup
+      .filter(x => x.key == groupKey)
+      .map(x => ({ key: rules.GroupingKey(x.record), record: x.record }));
+    const desired = desiredWithGroup
+      .filter(x => x.key == groupKey)
+      .map(x => ({ key: rules.GroupingKey(x.record), record: x.record }));
+
+    const intersectingKeys = intersection(
+      new Set(existing.map(x => x.key)),
+      new Set(desired.map(x => x.key)));
+
+    changes.push({
+      type: 'update',
+      existing: existing.map(x => x.record),
+      desired: desired.map(x => x.record),
+      toDelete: existing.filter(x => !intersectingKeys.has(x.key)).map(x => x.record),
+      toUpdate: [], // TODO: opportunistic in-place changes/patches
+      toCreate: desired.filter(x => !intersectingKeys.has(x.key)).map(x => x.record),
+    });
   }
 
   // console.log({toCreate, toDelete, matchingRecords})
 
-  return {
-    state,
-    toCreate,
-    toDelete,
-  };
+  return changes;
 }

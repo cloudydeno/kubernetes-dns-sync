@@ -48,8 +48,8 @@ for await (const tickSource of createTickStream(config, sources)) {
     let skipped = false;
     for (const diff of rawChanges) {
 
-      if (diff.toCreate.length === 0 && diff.toDelete.length === 0) {
-        console.log(p2, 'Provider', providerId, 'has no necesary changes for', diff.state.Zone.DNSName);
+      if (diff.Diff!.length === 0) {
+        console.log(p2, 'Provider', providerId, 'has no necesary changes for', diff.Zone.DNSName);
         continue;
       }
 
@@ -59,7 +59,11 @@ for await (const tickSource of createTickStream(config, sources)) {
         continue;
       }
 
-      console.log(p1, 'Submitting', diff.toCreate.length, 'to create,', diff.toDelete.length, 'to delete', 'to', providerId, 'for', diff.state.Zone.DNSName, '...');
+      const toCreate = diff.Diff!.filter(x => x.type == 'creation').length;
+      const toUpdate = diff.Diff!.filter(x => x.type == 'update').length;
+      const toDelete = diff.Diff!.filter(x => x.type == 'deletion').length;
+
+      console.log(p1, 'Submitting', toCreate, 'to create,', toUpdate, 'to update,', toDelete, 'to delete', 'to', providerId, 'for', diff.Zone.DNSName, '...');
       await provider.ApplyChanges(diff);
     }
 

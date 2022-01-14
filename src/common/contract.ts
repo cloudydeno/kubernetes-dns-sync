@@ -3,7 +3,7 @@ export interface DnsProvider<
 > {
 	ListZones(): Promise<Array<Zone>>;
 	ListRecords(zone: Zone): Promise<Array<Trecord>>;
-	ApplyChanges(diff: ZoneDiff<Trecord>): Promise<void>;
+	ApplyChanges(state: ZoneState<Trecord>): Promise<void>;
 
 	EnrichSourceRecord(record: SourceRecord): Trecord | null;
 	ComparisionKey(record: Trecord): string;
@@ -160,42 +160,27 @@ export type PlainRecordMX = {
 
 // TODO: also SRV
 
-/** Diff holds lists of actions to be executed by dns providers */
 export interface ZoneState<Trecord extends BaseRecord> {
-	// constructor(
-	// 	// public desiredRecords
-	// ) {}
 	Zone: Zone;
 	Existing: Array<Trecord>;
 	Desired?: Array<Trecord>;
-
-
-
-	// /** Records that need to be created
-	//  * @deprecated */
-	// Create = new Array<Endpoint>();
-	// /** Records that need to be updated (current data, desired data)
-	//  * @deprecated */
-	// Update = new Array<[Endpoint,Endpoint]>();
-	// /** Records that need to be deleted
-	//  * @deprecated */
-	// Delete = new Array<Endpoint>();
-
-	// get length() {
-	// 	return this.Create.length + this.Update.length + this.Delete.length;
-	// }
-
-	// get summary() {
-	// 	return [
-	// 		this.Create.length, 'creates,',
-	// 		this.Update.length, 'updates,',
-	// 		this.Delete.length, 'deletes'];
-	// }
+	Diff?: Array<RecordGroupDiff<Trecord>>;
 }
 
-export interface ZoneDiff<Trecord extends BaseRecord> {
-	state: ZoneState<Trecord>;
+/** Diff holds lists of actions to be executed by dns providers */
+// export interface ZoneDiff<Trecord extends BaseRecord> {
+// 	state: ZoneState<Trecord>;
+// 	toDelete: Array<Trecord>;
+// 	// TODO: toUpdate: Map<Trecord, Trecord>;
+// 	toCreate: Array<Trecord>;
+// }
+
+export interface RecordGroupDiff<Trecord extends BaseRecord> {
+	type: 'creation' | 'update' | 'deletion';
+	existing: Array<Trecord>;
+	desired: Array<Trecord>;
+
 	toDelete: Array<Trecord>;
-	// TODO: toUpdate: Map<Trecord, Trecord>;
 	toCreate: Array<Trecord>;
+	toUpdate: Array<{existing: Trecord, desired: Trecord}>;
 }

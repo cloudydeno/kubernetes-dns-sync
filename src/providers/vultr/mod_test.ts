@@ -1,9 +1,9 @@
 import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
 
-import { SourceRecord } from "../../common/contract.ts";
+import { SourceRecord, ZoneState } from "../../common/contract.ts";
 import { buildDiff } from "../../common/diff.ts";
 import { VultrApiMock } from "./mock.ts";
-import { VultrProvider } from "./mod.ts";
+import { VultrProvider, VultrRecord } from "./mod.ts";
 
 Deno.test('vultr record replacement', async () => {
 
@@ -39,13 +39,14 @@ Deno.test('vultr record replacement', async () => {
   const foundEndpoints = await provider.ListRecords(zones[0]);
   assertEquals(foundEndpoints.length, 1);
 
-  const diff = buildDiff({
+  const state: ZoneState<VultrRecord> = {
     Zone: zones[0],
     Existing: foundEndpoints,
     Desired: newEndpoints,
-  }, provider.ComparisionKey.bind(this));
+  };
+  state.Diff = buildDiff(state, provider);
 
-  await provider.ApplyChanges(diff);
+  await provider.ApplyChanges(state);
 
   apiMock.verifyCompletion();
 });
@@ -95,13 +96,14 @@ Deno.test('vultr partial record update', async () => {
   const foundEndpoints = await provider.ListRecords(zones[0]);
   assertEquals(foundEndpoints.length, 2);
 
-  const diff = buildDiff({
+  const state: ZoneState<VultrRecord> = {
     Zone: zones[0],
     Existing: foundEndpoints,
     Desired: newEndpoints,
-  }, provider.ComparisionKey.bind(this));
+  };
+  state.Diff = buildDiff(state, provider);
 
-  await provider.ApplyChanges(diff);
+  await provider.ApplyChanges(state);
 
   apiMock.verifyCompletion();
 });
