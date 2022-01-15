@@ -1,5 +1,4 @@
-import { intersection } from "../deps.ts";
-import { BaseRecord, Endpoint, PlainRecord, PlainRecordAddress, ZoneState } from "./contract.ts";
+import { PlainRecord, PlainRecordAddress } from "./contract.ts";
 
 export function splitIntoV4andV6(targets: string[]): PlainRecordAddress[] {
   const endpoints = new Array<PlainRecordAddress>();

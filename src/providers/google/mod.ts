@@ -4,11 +4,11 @@ import {
   DnsProvider,
   Zone, BaseRecord, getPlainRecordKey, SourceRecord, ZoneState, PlainRecord,
 } from "../../common/mod.ts";
+import { transformFromRrdata, transformToRrdata } from "../../common/rrdata.ts";
 import { GoogleCloudDnsApi,
   Schema$Change,
   Schema$ResourceRecordSet,
 } from "./api.ts";
-import { readTxtValue } from "./util.ts";
 
 interface GoogleRecord extends BaseRecord {
   recordSet?: Schema$ResourceRecordSet;
@@ -47,13 +47,6 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
     return zones;
   }
 
-  // recordSetMap = new Map<string,Schema$ResourceRecordSet>();
-
-  // findZoneForName(dnsName: string): Zone | undefined {
-  //   const matches = this.Zones.filter(x => x.DNSName == dnsName || dnsName.endsWith('.'+x.DNSName));
-  //   return matches.sort((a,b) => b.DNSName.length - a.DNSName.length)[0];
-  // }
-
   ComparisionKey(record: GoogleRecord): string {
     // google has no extra config stored with DNS records
     return JSON.stringify(getPlainRecordKey(record.dns));
@@ -83,49 +76,14 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
       const dnsName = record.name!.replace(/\.$/, '');
 
       for (const rrdata of record.rrdatas ?? []) {
-        const type = record.type as keyof typeof supportedRecords;
-        switch (type) {
-          case 'A':
-          case 'AAAA':
-          case 'CNAME':
-          case 'NS':
-          // case 'PTR':
-            endpoints.push({
-              recordSet: record,
-              dns: {
-                fqdn: dnsName,
-                type: type,
-                ttl: record.ttl,
-                target: rrdata.replace(/\.$/, ''),
-              }});
-            break;
-          case 'TXT':
-            endpoints.push({
-              recordSet: record,
-              dns: {
-                fqdn: dnsName,
-                type: type,
-                ttl: record.ttl,
-                content: readTxtValue(rrdata),
-              }});
-            break;
-          case 'MX': {
-            const [priority, target] = rrdata.split(' ');
-            endpoints.push({
-              recordSet: record,
-              dns: {
-                fqdn: dnsName,
-                type: type,
-                ttl: record.ttl,
-                priority: parseInt(priority, 10),
-                target: target.replace(/\.$/, ''),
-              }});
-          }; break;
-          // for the future: https://cloud.google.com/dns/docs/reference/json-record
-          default:
-            console.error(`TODO: unsupported record type ${type} observed in Google zone at ${record.name}`);
-            const _: never = type;
-        }
+        endpoints.push({
+          recordSet: record,
+          dns: {
+            fqdn: dnsName,
+            ttl: record.ttl,
+            ...transformFromRrdata(record.type as any, rrdata),
+          }
+        });
       }
     }
     return endpoints;
@@ -191,27 +149,4 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
 
   }
 
-}
-
-
-function transformToRrdata(desired: PlainRecord): string {
-  switch (desired.type) {
-    case 'A':
-    case 'AAAA':
-      return desired.target;
-    case 'CNAME':
-    case 'NS':
-      return `${desired.target}.`;
-    case 'MX':
-      return `${desired.priority} ${desired.target}.`;
-    case 'TXT':
-      return (desired.content
-          .match(/.{1,220}/g) ?? [])
-          .map(x => `"${x.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`)
-          .join(' ');
-    // for the future: https://cloud.google.com/dns/docs/reference/json-record
-    default:
-      const _: never = desired;
-  }
-  throw new Error(`BUG: unsupported record ${JSON.stringify(desired)} desired in Google zone`);
 }
