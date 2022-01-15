@@ -18,6 +18,7 @@ const supportedRecords = {
   'CNAME': true,
   'TXT': true,
   'MX': true,
+  'SRV': true,
 };
 
 export class VultrProvider implements DnsProvider<VultrRecord> {
@@ -55,7 +56,7 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
         ...record,
         dns: {
           ...record.dns,
-          ttl: record.dns.ttl ?? ttlFromAnnotations(record.annotations) ?? 60
+          ttl: record.dns.ttl ?? ttlFromAnnotations(record.annotations) ?? 120
         },
       };
     }
@@ -113,7 +114,7 @@ function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | fa
     case 'TXT':
       return {
         type, ttl, fqdn,
-        content: record.data.slice(1, -1),
+        content: record.data.slice(1, -1), // TODO: proper txt reading
       };
     case 'MX':
       return {
@@ -121,6 +122,16 @@ function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | fa
         priority: record.priority,
         target: record.data,
       };
+    case 'SRV': {
+      const [weight, port, target] = record.data.split(' ');
+      return {
+        type, ttl, fqdn,
+        priority: record.priority,
+        weight: parseInt(weight, 10),
+        port: parseInt(port, 10),
+        target: target.replace(/\.$/, ''),
+      };
+    }
     default:
       console.error(`TODO: unsupported record type ${type} observed in Vultr zone at ${fqdn}`);
       const _: never = type;
@@ -159,7 +170,16 @@ function transformForApi(zoneFqdn: string, dns: PlainRecord): DnsRecordData {
         ttl: dns.ttl ?? undefined,
         priority: dns.priority,
       };
-    case 'SOA': throw new Error(`TODO: creating 'SOA' records in Vultr`);
+    case 'SRV':
+      // const [weight, port, target] = dns.tar
+      return {
+        name: subdomain,
+        type: dns.type,
+        data: `${dns.weight} ${dns.port} ${dns.target}`,
+        ttl: dns.ttl ?? undefined,
+        priority: dns.priority,
+      };
+    case 'SOA': throw new Error(`Vultr does not support 'SOA' records`);
     default:
       const _: never = dns;
   }

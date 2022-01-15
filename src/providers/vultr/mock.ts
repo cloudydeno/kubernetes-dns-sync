@@ -16,7 +16,7 @@ export class VultrApiMock implements VultrApiSurface {
       const id = `${domain}:${idx}:${input.data.type}`;
       const fullRecord: DnsRecord = {
         priority: -1, // TODO: verify actual behavior
-        ttl: 60, // TODO: verify actual behaivor
+        ttl: 120, // TODO: verify actual behaivor
         ...input.data,
         id,
       };

@@ -49,10 +49,10 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
 
     const existing = existingWithGroup
       .filter(x => x.key == groupKey)
-      .map(x => ({ key: rules.GroupingKey(x.record), record: x.record }));
+      .map(x => ({ key: rules.ComparisionKey(x.record), record: x.record }));
     const desired = desiredWithGroup
       .filter(x => x.key == groupKey)
-      .map(x => ({ key: rules.GroupingKey(x.record), record: x.record }));
+      .map(x => ({ key: rules.ComparisionKey(x.record), record: x.record }));
 
     const intersectingKeys = intersection(
       new Set(existing.map(x => x.key)),

@@ -22,7 +22,11 @@ export function getPlainRecordKey(record: PlainRecord) {
     case 'TXT':
       return [record.fqdn, record.type, record.ttl, record.content];
     case 'MX':
-      return [record.fqdn, record.type, record.ttl, record.priority, record.target];
+      return [record.fqdn, record.type, record.ttl,
+        record.priority, record.target];
+    case 'SRV':
+      return [record.fqdn, record.type, record.ttl,
+        record.priority, record.weight, record.port, record.target];
     case 'SOA':
       return [record.fqdn, record.type, record.ttl,
         record.sourceHost, record.contactHost,

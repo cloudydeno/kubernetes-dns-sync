@@ -38,78 +38,6 @@ export interface Zone {
 	ZoneID: string;
 }
 
-/** Endpoint is a high-level way of a connection between a service and an IP.
- * @deprecated */
-export interface Endpoint {
-	/** The hostname of the DNS record
-	 * @deprecated */
-	DNSName: string;
-	/** The targets the DNS record points to
-	 * @deprecated */
-	Targets: Array<string>;
-	/** RecordType type of record, e.g. CNAME, A, SRV, TXT etc
-	 * @deprecated */
-	RecordType: string;
-	/** TTL for the record
-	 * @deprecated */
-  RecordTTL?: number;
-	/** Labels stores labels defined for the Endpoint
-	 * @deprecated */
-  Labels?: Record<string,string>;
-
-  /** Priority for MX or SRV records
-	 * @deprecated */
-  Priority?: number;
-	/** Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
-	 * @deprecated */
-	SetIdentifier?: string;
-  /** Kubernetes annotations useful for filtering
-	 * @deprecated */
-  Annotations?: Record<string,string>;
-
-	/** ProviderSpecific stores provider specific config
-	 * @deprecated */
-	ProviderSpecific?: Array<ProviderSpecificProperty>;
-}
-
-/** ProviderSpecificProperty holds the name and value of a configuration which is specific to individual DNS providers
- * @deprecated */
-export interface ProviderSpecificProperty {
-	Name:  string;
-	Value: string;
-}
-
-/** Changes holds lists of actions to be executed by dns providers
- * @deprecated */
-export class Changes<T extends BaseRecord> {
-	constructor(
-		public sourceRecords: Endpoint[],
-		public existingRecords: Endpoint[],
-	) {}
-
-	/** Records that need to be created
-	 * @deprecated */
-	Create = new Array<Endpoint>();
-	/** Records that need to be updated (current data, desired data)
-	 * @deprecated */
-	Update = new Array<[Endpoint,Endpoint]>();
-	/** Records that need to be deleted
-	 * @deprecated */
-	Delete = new Array<Endpoint>();
-
-	get length() {
-		return this.Create.length + this.Update.length + this.Delete.length;
-	}
-
-	get summary() {
-		return [
-			this.Create.length, 'creates,',
-			this.Update.length, 'updates,',
-			this.Delete.length, 'deletes'];
-	}
-}
-
-
 export interface SourceRecord extends BaseRecord {
 	/** Composite string identifying where this bundle came from */
 	resourceKey: string;
@@ -135,6 +63,7 @@ export type PlainRecordData =
 	| PlainRecordString
 	| PlainRecordHostname
 	| PlainRecordMX
+	| PlainRecordSRV
 	| PlainRecordSOA
 ;
 
@@ -155,11 +84,17 @@ export type PlainRecordString = {
 
 export type PlainRecordMX = {
 	type: 'MX';
-	target: string;
 	priority: number;
+	target: string;
 }
 
-// TODO: also SRV
+export type PlainRecordSRV = {
+	type: 'SRV';
+	priority: number;
+	weight: number;
+	port: number;
+	target: string;
+}
 
 export type PlainRecordSOA = {
 	type: 'SOA';
@@ -180,6 +115,7 @@ export const AllSupportedRecords: Record<PlainRecordData['type'], true> = {
   'TXT': true,
   'MX': true,
 	'SOA': true,
+	'SRV': true,
 };
 
 export interface ZoneState<Trecord extends BaseRecord> {

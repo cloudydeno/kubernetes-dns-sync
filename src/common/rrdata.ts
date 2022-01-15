@@ -39,6 +39,16 @@ export function transformFromRrdata(rType: supportedRecords, rrdata: string): Pl
         serial, refresh, retry, expire, minimum,
       };
     };
+    case 'SRV': {
+      const [priority, weight, port, target] = rrdata.split(' ');
+      return {
+        type: rType,
+        priority: parseInt(priority, 10),
+        weight: parseInt(weight, 10),
+        port: parseInt(port, 10),
+        target: target.replace(/\.$/, ''),
+      };
+    };
     // for the future: https://cloud.google.com/dns/docs/reference/json-record
     default:
       const _: never = rType;
@@ -67,6 +77,8 @@ export function transformToRrdata(desired: PlainRecord): string {
         `${desired.serial}`, `${desired.refresh}`, `${desired.retry}`,
         `${desired.expire}`, `${desired.minimum}`,
       ].join(' ');
+    case 'SRV':
+      return `${desired.priority} ${desired.weight} ${desired.port} ${desired.target}.`;
     // for the future: https://cloud.google.com/dns/docs/reference/json-record
     default:
       const _: never = desired;
