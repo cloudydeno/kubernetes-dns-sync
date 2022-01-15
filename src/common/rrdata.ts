@@ -29,6 +29,16 @@ export function transformFromRrdata(rType: supportedRecords, rrdata: string): Pl
         target: target.replace(/\.$/, ''),
       };
     };
+    case 'SOA': {
+      const [sourceHost, contactHost, ...numbers] = rrdata.split(' ');
+      const [serial, refresh, retry, expire, minimum] = numbers.map(x => parseInt(x, 10));
+      return {
+        type: rType,
+        sourceHost: sourceHost.replace(/\.$/, ''),
+        contactHost: contactHost.replace(/\.$/, ''),
+        serial, refresh, retry, expire, minimum,
+      };
+    };
     // for the future: https://cloud.google.com/dns/docs/reference/json-record
     default:
       const _: never = rType;
@@ -51,6 +61,12 @@ export function transformToRrdata(desired: PlainRecord): string {
           .match(/.{1,220}/g) ?? []) // TODO: imprecise art
           .map(x => `"${x.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`)
           .join(' ');
+    case 'SOA':
+      return [
+        `${desired.sourceHost}.`, `${desired.contactHost}.`,
+        `${desired.serial}`, `${desired.refresh}`, `${desired.retry}`,
+        `${desired.expire}`, `${desired.minimum}`,
+      ].join(' ');
     // for the future: https://cloud.google.com/dns/docs/reference/json-record
     default:
       const _: never = desired;

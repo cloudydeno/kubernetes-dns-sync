@@ -1,0 +1,50 @@
+# Created with podman-3.0.1
+apiVersion: v1
+kind: Pod
+metadata:
+  name: powerdns
+spec:
+  containers:
+  - name: mariadb
+    image: docker.io/mariadb:10.1
+    env:
+    - name: MYSQL_ROOT_PASSWORD
+      value: supersecret
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: false
+      capabilities:
+        drop: [ALL]
+  - name: pdns
+    image: docker.io/psitrax/powerdns
+    args:
+    - --api=yes
+    - --api-key=hello-world
+    - --webserver=yes
+    - --webserver-port=7070
+    - --webserver-address=0.0.0.0
+    - --webserver-allow-from=0.0.0.0/0
+    - --log-dns-details=yes
+    - --log-dns-queries=yes
+    - --loglevel=5
+    env:
+    - name: MYSQL_PORT
+      value: "3306"
+    - name: MYSQL_USER
+      value: root
+    - name: MYSQL_HOST
+      value: 127.0.0.1
+    - name: MYSQL_PASS
+      value: supersecret
+    ports:
+    - containerPort: 53
+      hostPort: 5353
+      protocol: UDP
+    - containerPort: 7070
+      hostPort: 7070
+      protocol: TCP
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: false
+      capabilities:
+        drop: [ALL]

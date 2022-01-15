@@ -57,7 +57,7 @@ export class PowerDnsApi {
   }
 }
 
-interface ZoneListEntry {
+export interface ZoneListEntry {
   dnssec: boolean;
   edited_serial: number;
   id: string;
@@ -69,8 +69,8 @@ interface ZoneListEntry {
   serial?: number;
   url: string;
 }[];
-type ZoneList = Array<ZoneListEntry>;
-type ZoneDetails = ZoneListEntry & {
+export type ZoneList = Array<ZoneListEntry>;
+export type ZoneDetails = ZoneListEntry & {
   api_rectify: boolean;
   master_tsig_key_ids: Array<string>;
   slave_tsig_key_ids: Array<string>;
@@ -81,7 +81,7 @@ type ZoneDetails = ZoneListEntry & {
   soa_edit_api: string;
 };
 
-interface DnsRecordSet {
+export interface DnsRecordSet {
   name: string;
   type: string;
   records: Array<DnsRecordData>;
@@ -90,11 +90,11 @@ interface DnsRecordSet {
   priority?: number;
   changetype?: "REPLACE" | "DELETE";
 }
-interface DnsRecordData {
+export interface DnsRecordData {
   content: string;
   disabled: boolean;
 }
-interface DnsComment {
+export interface DnsComment {
   content: string;
   account?: string;
   modified_at?: number;

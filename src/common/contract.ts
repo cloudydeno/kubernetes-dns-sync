@@ -135,6 +135,7 @@ export type PlainRecordData =
 	| PlainRecordString
 	| PlainRecordHostname
 	| PlainRecordMX
+	| PlainRecordSOA
 ;
 
 export type PlainRecordAddress = {
@@ -159,6 +160,27 @@ export type PlainRecordMX = {
 }
 
 // TODO: also SRV
+
+export type PlainRecordSOA = {
+	type: 'SOA';
+	sourceHost: string;
+	contactHost: string;
+	serial: number;
+	refresh: number;
+	retry: number;
+	expire: number;
+	minimum: number;
+}
+
+export const AllSupportedRecords: Record<PlainRecordData['type'], true> = {
+  'A': true,
+  'AAAA': true,
+  'NS': true,
+  'CNAME': true,
+  'TXT': true,
+  'MX': true,
+	'SOA': true,
+};
 
 export interface ZoneState<Trecord extends BaseRecord> {
 	Zone: Zone;

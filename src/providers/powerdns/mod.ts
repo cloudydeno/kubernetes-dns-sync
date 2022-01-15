@@ -1,11 +1,13 @@
+import { ttlFromAnnotations } from "../../common/annotations.ts";
 import {
   PowerDnsProviderConfig,
-  DnsProvider, DnsProviderContext,
-  Zone, Endpoint, Changes,
+  DnsProvider,
+  Zone, BaseRecord, PlainRecordData, PlainRecord, ZoneState, PlainRecordMX, getPlainRecordKey, SourceRecord, AllSupportedRecords,
 } from "../../common/mod.ts";
-import { PowerDnsApi } from "./api.ts";
+import { transformFromRrdata, transformToRrdata } from "../../common/rrdata.ts";
+import { DnsRecordSet, PowerDnsApi } from "./api.ts";
 
-export class PowerDnsProvider implements DnsProvider<PowerDnsProviderContext> {
+export class PowerDnsProvider implements DnsProvider<BaseRecord> {
   constructor(
     public config: PowerDnsProviderConfig,
   ) {
@@ -15,90 +17,83 @@ export class PowerDnsProvider implements DnsProvider<PowerDnsProviderContext> {
   }
   api: PowerDnsApi;
 
-	async NewContext() {
+	async ListZones() {
     const zones = new Array<Zone>();
-    const domainFilter = new Set(this.config.domain_filter ?? []);
+    const domainFilter = new Set(this.config.domain_filter?.map(x => x.replace(/\.$/, '')) ?? []);
     for (const zone of await this.api.listAllZones()) {
-      if (domainFilter.size > 0 && !domainFilter.has(zone.name)) continue;
-      zones.push({DNSName: zone.name.slice(0, -1), ZoneID: zone.id});
+      const fqdn = zone.name.replace(/\.$/, '');
+      if (domainFilter.size > 0 && !domainFilter.has(fqdn)) continue;
+      zones.push({DNSName: fqdn, ZoneID: zone.id});
     }
-    return new PowerDnsProviderContext(this.config, zones, this.api);
+    return zones;
   }
 
-}
-export class PowerDnsProviderContext implements DnsProviderContext {
-  constructor(
-    public config: PowerDnsProviderConfig,
-    public Zones: Array<Zone>,
-    private api: PowerDnsApi,
-  ) {}
-
-  findZoneForName(dnsName: string): Zone | undefined {
-    const matches = this.Zones.filter(x => x.DNSName == dnsName || dnsName.endsWith('.'+x.DNSName));
-    return matches.sort((a,b) => b.DNSName.length - a.DNSName.length)[0];
+  ComparisionKey(record: BaseRecord): string {
+    // no extra config stored with DNS records
+    return JSON.stringify(getPlainRecordKey(record.dns));
+  }
+  GroupingKey(record: BaseRecord): string {
+    // This 'should' line up with how rrdata recordsets are
+    return JSON.stringify([record.dns.fqdn, record.dns.type]);
   }
 
-  async Records(): Promise<Endpoint[]> {
-    const endpoints = new Array<Endpoint>(); // every recordset we find
-    for (const zone of this.Zones) {
+  EnrichSourceRecord(record: SourceRecord): BaseRecord | null {
+    if (!(record.dns.type in AllSupportedRecords)) {
+      console.error(`TODO: unsupported record type ${record.dns.type} desired for PowerDNS zone at ${record.dns.fqdn}`);
+      return null; // toss unsupported records
+    }
+    return {
+      ...record,
+      dns: {
+        ...record.dns,
+        ttl: record.dns.ttl ?? ttlFromAnnotations(record.annotations) ?? 300
+      },
+    };
+  }
 
-      const zoneData = await this.api.getZone(zone.DNSName);
-      for (const recordSet of zoneData.rrsets) {
+  async ListRecords(zone: Zone): Promise<BaseRecord[]> {
+    const endpoints = new Array<BaseRecord>(); // every recordset we find
+    const zoneData = await this.api.getZone(zone.DNSName);
+    for (const recordSet of zoneData.rrsets) {
+      for (const record of recordSet.records) {
+        // if (re)
         endpoints.push({
-          DNSName: recordSet.name.slice(0, -1),
-          RecordType: recordSet.type,
-          Targets: recordSet.records.map(x =>
-            recordSet.type === 'TXT' // any others?
-            ? x.content.slice(1, -1)
-            : x.content),
-          RecordTTL: recordSet.ttl ?? undefined,
-          Priority: recordSet.priority ?? undefined,
+          // recordSet: record,
+          dns: {
+            fqdn: recordSet.name.replace(/\.$/, ''),
+            ttl: recordSet.ttl,
+            ...transformFromRrdata(recordSet.type as any, record.content),
+          }
         });
       }
     }
     return endpoints;
   }
 
-  async ApplyChanges(changes: Changes): Promise<void> {
+  async ApplyChanges(changes: ZoneState<BaseRecord>): Promise<void> {
+    console.log('powerdns: Have', changes.Diff?.length, 'changes for', changes.Zone.DNSName);
 
-    const zoneCreates = changes.Create.map(x => ({
-      type: 'create' as const, endpoint: x,
-      zone: this.findZoneForName(x.DNSName)?.ZoneID,
-    }));
-    const zoneDeletes = changes.Delete.map(x => ({
-      type: 'delete' as const, endpoint: x,
-      zone: this.findZoneForName(x.DNSName)?.ZoneID,
-    }));
-    const zoneUpdates = changes.Update.map(([old, x]) => ({
-      type: 'replace' as const, endpoint: x,
-      zone: this.findZoneForName(x.DNSName)?.ZoneID,
-    }));
-
-    const allChanges = [...zoneCreates, ...zoneDeletes, ...zoneUpdates];
-    const allZoneChanges = allChanges.reduce((map, change) => {
-      if (!change.zone) return map;
-      if (!map.has(change.zone)) map.set(change.zone, new Array());
-      map.get(change.zone)!.push(change);
-      return map;
-    }, new Map<string,typeof allChanges>());
-
-    for (const [zoneId, changeList] of allZoneChanges) {
-      console.log('powerdns: Have', changeList.length, 'changes for', zoneId);
-
-      await this.api.patchZoneRecords(zoneId, changeList.map(change => ({
-        name: change.endpoint.DNSName+'.',
-        type: change.endpoint.RecordType,
-        ttl: change.endpoint.RecordTTL ?? 300,
-        priority: change.endpoint.Priority,
-        changetype: change.type === 'delete' ? 'DELETE' : 'REPLACE',
+    const patch: DnsRecordSet[] = changes.Diff!.map(change => {
+      const firstDesired = (change.desired[0] || change.existing[0]);
+      return {
+        name: firstDesired.dns.fqdn +'.',
+        type: firstDesired.dns.type,
+        ttl: firstDesired.dns.ttl ?? 300,
+        priority: (firstDesired.dns as PlainRecordMX).priority,
+        changetype: change.type === 'deletion' ? 'DELETE' : 'REPLACE',
         comments: [],
-        records: change.endpoint.Targets.map(y => ({
-          content: change.endpoint.RecordType === 'TXT' ? `"${y}"` : y,
+        records: change.desired.map(y => ({
+          content: transformToRrdata(y.dns),
           disabled: false,
         })),
-      })));
+      };
+    });
+
+    for (const item of patch) {
+      console.log('powerdns: -', item.changetype, 'on', item.name, item.type, item.ttl, 'to', item.records);
     }
 
+    await this.api.patchZoneRecords(changes.Zone.ZoneID, patch);
   }
 
 }

@@ -19,6 +19,7 @@ export class NoopRegistry<T extends BaseRecord> implements DnsRegistry<T,T> {
       Zone: provider.Zone,
       Existing: provider.Existing.filter(x =>
         !(x.dns.fqdn == provider.Zone.DNSName && ['SOA','NS'].includes(x.dns.type))),
+      Desired: provider.Desired,
     });
   }
 

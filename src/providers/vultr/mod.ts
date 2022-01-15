@@ -159,6 +159,7 @@ function transformForApi(zoneFqdn: string, dns: PlainRecord): DnsRecordData {
         ttl: dns.ttl ?? undefined,
         priority: dns.priority,
       };
+    case 'SOA': throw new Error(`TODO: creating 'SOA' records in Vultr`);
     default:
       const _: never = dns;
   }

@@ -23,6 +23,10 @@ export function getPlainRecordKey(record: PlainRecord) {
       return [record.fqdn, record.type, record.ttl, record.content];
     case 'MX':
       return [record.fqdn, record.type, record.ttl, record.priority, record.target];
+    case 'SOA':
+      return [record.fqdn, record.type, record.ttl,
+        record.sourceHost, record.contactHost,
+        record.serial, record.refresh, record.retry, record.expire, record.minimum];
     default:
       const _: never = record;
       throw new Error(`unreachable`);

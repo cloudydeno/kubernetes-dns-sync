@@ -26,7 +26,7 @@ Deno.test("first-time diff (happy path)", () => {
 
   assertEquals(diff.length, 1);
   assertObjectMatch(diff[0], {
-    type: 'deletion',
+    type: 'creation',
   })
   // assertEquals(diff.toCreate.length, 1);
   // // assertEquals(changes.Update.length, 0);

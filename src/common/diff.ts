@@ -7,8 +7,8 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
 
   const changes = new Array<RecordGroupDiff<Trecord>>();
 
-  const existingWithGroup = state.Existing.map(x => ({key: rules.ComparisionKey(x), record: x}));
-  const desiredWithGroup = state.Desired.map(x => ({key: rules.ComparisionKey(x), record: x}));
+  const existingWithGroup = state.Existing.map(x => ({key: rules.GroupingKey(x), record: x}));
+  const desiredWithGroup = state.Desired.map(x => ({key: rules.GroupingKey(x), record: x}));
 
   const existingGroups = new Set(existingWithGroup.map(x => x.key));
   const desiredGroups = new Set(desiredWithGroup.map(x => x.key));
@@ -35,7 +35,7 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
 
     const desired = desiredWithGroup.filter(x => x.key == groupKey).map(x => x.record);
     changes.push({
-      type: 'deletion',
+      type: 'creation',
       existing: [],
       desired,
       toDelete: [],
@@ -68,7 +68,7 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
     });
   }
 
-  // console.log({toCreate, toDelete, matchingRecords})
+  // console.log(JSON.stringify(changes, null, 2));
 
   return changes;
 }
