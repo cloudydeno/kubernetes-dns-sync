@@ -18,7 +18,7 @@ export { ExternaldnsV1alpha1Api } from "https://deno.land/x/kubernetes_apis@v0.3
 // from https://github.com/cloudydeno/deno-bitesized :
 export {
   ServiceAccount,
-} from "https://crux.land/6FyxGX#google-service-account";
+} from "https://crux.land/CtNDQ#google-service-account";
 export {
   intersection,
   union,
