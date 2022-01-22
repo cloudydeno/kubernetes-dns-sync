@@ -1,8 +1,14 @@
 import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
-import { BaseRecord, DnsProvider, DnsRegistry, SourceRecord, ZoneState } from "./contract.ts";
-import { buildDiff } from "./diff.ts";
+import { BaseRecord, DnsProvider, DnsRegistry, SourceRecord, ZoneState } from "../common/contract.ts";
+import { buildDiff } from "../common/diff.ts";
 
-export async function applyToProvider<Tsource extends BaseRecord, Tinner extends Tsource>(provider: DnsProvider<Tsource>, registry: DnsRegistry<Tsource>, source: SourceRecord[]) {
+export async function applyToProvider<
+  Tsource extends BaseRecord,
+>(
+  provider: DnsProvider<Tsource>,
+  registry: DnsRegistry<Tsource>,
+  source: SourceRecord[],
+) {
 
   const zones = await provider.ListZones();
   assertEquals(zones.length, 1);
