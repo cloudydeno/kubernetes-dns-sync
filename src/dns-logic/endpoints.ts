@@ -1,4 +1,4 @@
-import type { PlainRecord, PlainRecordAddress } from "../common/contract.ts";
+import type { PlainRecord, PlainRecordAddress } from "../common/types.ts";
 
 export const AllSupportedRecords: Record<PlainRecord['type'], true> = {
   'A': true,

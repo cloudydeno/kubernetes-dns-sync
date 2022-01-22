@@ -1,4 +1,4 @@
-import type { PlainRecord, PlainRecordData } from "../common/contract.ts";
+import type { PlainRecord, PlainRecordData } from "../common/types.ts";
 
 // This file is useful for integrating providers that
 // expose the raw 'rrdata' strings in their API,

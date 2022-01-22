@@ -1,7 +1,7 @@
 import type { GoogleProviderConfig } from "../../common/config.ts";
 import type {
   BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState,
-} from "../../common/contract.ts";
+} from "../../common/types.ts";
 
 import { ttlFromAnnotations } from "../../dns-logic/annotations.ts";
 import { getPlainRecordKey } from "../../dns-logic/endpoints.ts";

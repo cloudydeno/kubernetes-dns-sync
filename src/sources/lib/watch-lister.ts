@@ -1,4 +1,4 @@
-import { ObjectMeta, Reflector, Status, WatchEvent } from "../deps.ts";
+import { ObjectMeta, Reflector, Status, WatchEvent } from "../../deps.ts";
 
 type ListOf<T> = { metadata: { resourceVersion?: string | null }; items: Array<T> };
 

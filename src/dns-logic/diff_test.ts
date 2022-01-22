@@ -1,6 +1,6 @@
 import { assertEquals, assertObjectMatch } from "https://deno.land/std@0.115.0/testing/asserts.ts";
 
-import type { Zone, BaseRecord } from "../common/contract.ts";
+import type { Zone, BaseRecord } from "../common/types.ts";
 import { buildDiff } from "./diff.ts";
 import { getPlainRecordKey } from "./endpoints.ts";
 

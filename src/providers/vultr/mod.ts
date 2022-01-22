@@ -1,7 +1,7 @@
 import type { VultrProviderConfig } from "../../common/config.ts";
 import type {
   BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState, PlainRecord,
-} from "../../common/contract.ts";
+} from "../../common/types.ts";
 
 import { ttlFromAnnotations } from "../../dns-logic/annotations.ts";
 import { getPlainRecordKey } from "../../dns-logic/endpoints.ts";

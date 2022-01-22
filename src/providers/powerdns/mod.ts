@@ -1,7 +1,7 @@
 import type { PowerDnsProviderConfig } from "../../common/config.ts";
 import type {
   DnsProvider, BaseRecord, Zone, SourceRecord, ZoneState, PlainRecordMX,
-} from "../../common/contract.ts";
+} from "../../common/types.ts";
 
 import { ttlFromAnnotations } from "../../dns-logic/annotations.ts";
 import { AllSupportedRecords, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
