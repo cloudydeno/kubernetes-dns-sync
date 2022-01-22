@@ -1,6 +1,6 @@
 import type {
   DnsSource, BaseRecord, DnsRegistry, DnsProvider, SourceRecord, ZoneState,
-} from "../common/types.ts";
+} from "../types.ts";
 
 import { buildDiff } from "../dns-logic/diff.ts";
 import { transformToRrdata } from "../dns-logic/rrdata.ts";

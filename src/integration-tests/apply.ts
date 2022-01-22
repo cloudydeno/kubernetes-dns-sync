@@ -2,7 +2,7 @@ import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
 
 import type {
   BaseRecord, DnsProvider, DnsRegistry, SourceRecord, ZoneState,
-} from "../common/types.ts";
+} from "../types.ts";
 
 import { buildDiff } from "../dns-logic/diff.ts";
 

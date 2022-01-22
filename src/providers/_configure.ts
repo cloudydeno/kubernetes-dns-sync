@@ -1,4 +1,4 @@
-import type { ProviderConfig } from "../common/config.ts";
+import type { ProviderConfig } from "../config.ts";
 import { GoogleProvider } from "./google/mod.ts";
 import { PowerDnsProvider } from "./powerdns/mod.ts";
 import { VultrProvider } from "./vultr/mod.ts";

@@ -1,7 +1,7 @@
 import type {
   PlainRecord, PlainRecordAddress,
   BaseRecord, SourceRecord,
- } from "../common/types.ts";
+ } from "../types.ts";
 
 export const AllSupportedRecords: Record<PlainRecord['type'], true> = {
   'A': true,

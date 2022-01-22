@@ -1,4 +1,4 @@
-import type { RegistryConfig } from "../common/config.ts";
+import type { RegistryConfig } from "../config.ts";
 import { NoopRegistry } from "./noop.ts";
 import { TxtRegistry } from "./txt.ts";
 

@@ -1,7 +1,7 @@
 import { CoreV1Api, KubernetesClient } from '../deps.ts';
 
-import type { NodeSourceConfig } from "../common/config.ts";
-import type { DnsSource, SourceRecord } from "../common/types.ts";
+import type { NodeSourceConfig } from "../config.ts";
+import type { DnsSource, SourceRecord } from "../types.ts";
 import { WatchLister } from "./lib/watch-lister.ts";
 
 import { splitIntoV4andV6 } from "../dns-logic/endpoints.ts";

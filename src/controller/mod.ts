@@ -6,7 +6,7 @@ import {
   replaceGlobalFetch,
 } from '../deps.ts';
 
-import { isControllerConfig } from "../common/config.ts";
+import { isControllerConfig } from "../config.ts";
 import { configureSource } from "../sources/_configure.ts";
 import { configureProvider } from "../providers/_configure.ts";
 import { configureRegistry } from "../registries/_configure.ts";

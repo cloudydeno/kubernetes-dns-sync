@@ -1,7 +1,7 @@
-import type { PowerDnsProviderConfig } from "../../common/config.ts";
+import type { PowerDnsProviderConfig } from "../../config.ts";
 import type {
   DnsProvider, BaseRecord, Zone, SourceRecord, ZoneState, PlainRecordMX,
-} from "../../common/types.ts";
+} from "../../types.ts";
 
 import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
 import { transformFromRrdata, transformToRrdata } from "../../dns-logic/rrdata.ts";

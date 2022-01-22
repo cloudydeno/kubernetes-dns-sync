@@ -1,7 +1,7 @@
 import { KubernetesClient, NetworkingV1Api } from '../deps.ts';
 
-import type { IngressSourceConfig } from "../common/config.ts";
-import type { DnsSource, SourceRecord, PlainRecordHostname } from "../common/types.ts";
+import type { IngressSourceConfig } from "../config.ts";
+import type { DnsSource, SourceRecord, PlainRecordHostname } from "../types.ts";
 import { WatchLister } from './lib/watch-lister.ts';
 
 import { splitIntoV4andV6 } from "../dns-logic/endpoints.ts";

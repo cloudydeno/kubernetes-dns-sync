@@ -1,7 +1,7 @@
-import type { GoogleProviderConfig } from "../../common/config.ts";
+import type { GoogleProviderConfig } from "../../config.ts";
 import type {
   BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState,
-} from "../../common/types.ts";
+} from "../../types.ts";
 
 import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
 import { transformFromRrdata, transformToRrdata } from "../../dns-logic/rrdata.ts";

@@ -1,7 +1,7 @@
 import { AcmeCertManagerIoV1Api, KubernetesClient } from '../deps.ts';
 
-import type { AcmeCrdSourceConfig } from "../common/config.ts";
-import type { DnsSource, SourceRecord } from "../common/types.ts";
+import type { AcmeCrdSourceConfig } from "../config.ts";
+import type { DnsSource, SourceRecord } from "../types.ts";
 import { WatchLister } from "./lib/watch-lister.ts";
 
 /**

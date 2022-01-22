@@ -1,6 +1,6 @@
 import { KubernetesClient, autoDetectKubernetesClient } from "../deps.ts";
 
-import type { SourceConfig } from "../common/config.ts";
+import type { SourceConfig } from "../config.ts";
 import { AcmeCrdSource } from "./acme-crd.ts";
 import { CrdSource } from "./crd.ts";
 import { IngressSource } from "./ingress.ts";
