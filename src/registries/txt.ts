@@ -1,22 +1,33 @@
-import {
-  TxtRegistryConfig,
-  DnsRegistry,
-  BaseRecord, ZoneState,
-} from "../common/mod.ts";
+// import {
+//   TxtRegistryConfig,
+//   DnsRegistry,
+//   BaseRecord, ZoneState,
+// } from "../common/mod.ts";
+
+import { TxtRegistryConfig } from "../common/config.ts";
+import { DnsRegistry, ZoneState, BaseRecord, SourceRecord } from "../common/contract.ts";
 
 
-type TxtRegistryRecord<T extends BaseRecord> = T & {
-  heritage: string;
-  owner: string;
-  recordTypes: string[];
-}
+// type TxtRegistryRecord<T extends BaseRecord> = T & {
+//   heritage: string;
+//   owner: string;
+//   recordTypes: string[];
+// }
 
-interface TxtRegistryState<T extends BaseRecord> extends ZoneState<TxtRegistryRecord<T>> {
-
+interface TxtRegistryState<T extends BaseRecord> extends ZoneState<T> {
+  originalState: ZoneState<T>;
+  ownershipRecords: {
+    record: T;
+    labels: Record<string, string>;
+    targetFqdn: string;
+    isOurs: boolean;
+    isAdoptable: boolean;
+    targetTypes: Set<string>;
+  }[];
 }
 
 /** Manages record ownership in-band with regular TXT records */
-export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinput,TxtRegistryRecord<Tinput>> {
+export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinput,Tinput> {
   config: Required<TxtRegistryConfig>;
   constructor(config: TxtRegistryConfig) {
     this.config = {
@@ -28,6 +39,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
     if (config.txt_suffix) throw new Error(`TODO: txt_suffix's - where do they go?`);
   }
 
+  // RecognizeLabels(provider: ZoneState<T>): Promise<ZoneState<T>> {
   RecognizeLabels(fromProvider: ZoneState<Tinput>): Promise<TxtRegistryState<Tinput>> {
 
     const ownershipRecords = fromProvider
@@ -46,19 +58,107 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
           targetTypes: new Set(Object.keys(labels).filter(x => x.startsWith('record-type/')).map(x => x.split('/')[1])),
         }];
       });
+    const ownershipRecordSet = new Set(ownershipRecords.map(x => x.record));
+    const normalRecords = fromProvider.Existing.filter(x => !ownershipRecordSet.has(x));
 
-    console.log('ownership records:', ownershipRecords);
-    Deno.exit(4);
+    const ourTargets = ownershipRecords.filter(x => x.isOurs);
+    const ourRecords = normalRecords.filter(x => ourTargets.find(y => {
+      if (x.dns.fqdn !== y.targetFqdn) return false;
+      if (y.targetTypes.size == 0) return true;
+      return y.targetTypes.has(x.dns.type);
+    }));
 
-    return Promise.resolve({
+    console.log('our records:', ourRecords);
+    // Deno.exit(4);
+
+    const newState: TxtRegistryState<Tinput> = {
       Zone: fromProvider.Zone,
-      Existing: [], // fromProvider.Existing,
+      Existing: ourRecords, // fromProvider.Existing,
       // Desired: fromProvider.Desired,
-    });
+      ownershipRecords,
+      originalState: fromProvider,
+    };
+    return Promise.resolve(newState);
   }
 
-  CommitLabels(inner: TxtRegistryState<Tinput>): Promise<ZoneState<Tinput>> {
-    return Promise.resolve(inner);
+  CommitLabels(inner: TxtRegistryState<Tinput>, enricher: (record: SourceRecord) => Tinput | null): Promise<ZoneState<Tinput>> {
+    // const existing = new Array(inner.Existing);
+    // for (const ownerRec of inner.ownershipRecords) {
+    //   existing.push(ownerRec.record);
+    // }
+
+
+    const relevantCoords = new Set<string>();
+    for (const existing of inner.Existing) {
+      relevantCoords.add(JSON.stringify([existing.dns.fqdn, existing.dns.type]));
+    }
+    for (const existing of inner.Desired ?? []) {
+      relevantCoords.add(JSON.stringify([existing.dns.fqdn, existing.dns.type]));
+    }
+
+    if (!inner.Desired) throw new Error(`need Desired to plan txt registry`);
+
+    // const existing = new Array<Tinput>();
+    const desired = Array.from(inner.Desired);
+
+    console.log('Relevant coords:', relevantCoords);
+    for (const coord of relevantCoords) {
+      const [fqdn, type] = JSON.parse(coord) as string[];
+      const ownership = inner.ownershipRecords.find(x => x.targetFqdn == fqdn && (x.targetTypes.size == 0 || x.targetTypes.has(type)));
+      if (ownership?.isOurs) {
+
+        const labels = {
+          'heritage': 'external-dns',
+          'external-dns/owner': this.config.txt_owner_id,
+          [`record-type/${type}`]: 'managed',
+        };
+        const ownerRec = enricher({
+          annotations: {},
+          resourceKey: 'txt-registry',
+          dns: {
+            fqdn: `${this.config.txt_prefix}${fqdn}`,
+            type: 'TXT',
+            content: Object.entries(labels).map(x => x.join('=')).join(','),
+          },
+        });
+        if (!ownerRec) throw new Error(`BUG: didn't get ownership record enriched`);
+        desired.push(ownerRec);
+
+      }
+      if (ownership?.isAdoptable) throw new Error(`TODO: ownership adoption`);
+      if (!ownership) {
+        // const existing = = inner.Existing
+        throw new Error(`TODO`)
+      }
+    }
+
+    const rawOwners = new Map(inner.ownershipRecords.map(x => [x.record, x]));
+    for (const record of inner.originalState.Existing) {
+      const ownership = rawOwners.get(record);
+      if (ownership) {
+        if (!ownership.isOurs) {
+          desired.push(record);
+        } else {
+          // our own ownerships will be freshly generated instead
+        }
+      } else if (!relevantCoords.has(JSON.stringify([record.dns.fqdn, record.dns.type]))) {
+        desired.push(record);
+      }
+    }
+
+
+
+    // Deno.exit(56);
+
+    console.log('final desired:', desired);
+
+    // for (const desired of )
+
+    return Promise.resolve({
+      Zone: inner.Zone,
+      Existing: inner.originalState.Existing,
+      Desired: desired,
+    });
   }
 
   // heritageRecords = new Map<string, Tinput>();
