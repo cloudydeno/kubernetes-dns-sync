@@ -107,6 +107,29 @@ export class GoogleCloudDnsApi {
 }
 
 
+// https://cloud.google.com/dns/docs/records-overview#supported_dns_record_types
+type supportedRecordTypes =
+  | 'A'
+  | 'AAAA'
+  | 'CAA'
+  | 'CNAME'
+  | 'DNSKEY'
+  | 'DS'
+  | 'HTTPS'
+  | 'IPSECKEY'
+  | 'MX'
+  | 'NAPTR'
+  | 'NS'
+  | 'PTR'
+  | 'SOA'
+  | 'SPF'
+  | 'SRV'
+  | 'SSHFP'
+  | 'SVCB'
+  | 'TLSA'
+  | 'TXT'
+;
+
 // schemas via https://github.com/googleapis/google-api-nodejs-client/blob/master/src/apis/dns/v1.ts
 
 export interface Schema$ManagedZonesListResponse {
@@ -158,7 +181,7 @@ export interface Schema$ResourceRecordSet {
   rrdatas?: string[] | null;
   signatureRrdatas?: string[] | null;
   ttl?: number | null;
-  type?: string | null;
+  type?: supportedRecordTypes | null;
 }
 
 export interface Schema$Change {

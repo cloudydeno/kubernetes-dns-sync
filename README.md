@@ -147,3 +147,13 @@ I tried using `external-dns` for more serious DNS management (records for a whol
 After trying to refactor enough to support several of these needs, I decided to to my hand at a from-scratch replacement. Even if it doesn't work I'll hopefully learn why things are so hard to begin with.
 
 I'm considering a few differences - such as allowing a DynamoDB table for ownership instead of TXT records - but overall the basic loop reflects how external-dns works. CRDs and heritage TXT records will stay compatible.
+
+## Running functional tests
+Some provider tests actually communicate with a live API. These are not included in the default test suite.
+
+The individual functional tests can be launched directly:
+
+```
+src/providers/vultr/functional-test.ts
+src/providers/powerdns/functional-test.ts
+```

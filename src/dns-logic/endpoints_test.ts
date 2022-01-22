@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
 
-import { SplitByIPVersion } from "./endpoints.ts";
+import { splitIntoV4andV6 } from "./endpoints.ts";
 
 Deno.test('Endpoint SplitByIPVersion: Dualstack targets', () => {
   verifySplitByIPVersion({
@@ -49,27 +49,14 @@ function verifySplitByIPVersion(opts: {
   expectedIPv4Targets: string[],
   expectedIPv6Targets: string[],
 }) {
-  const splitEndpoints = SplitByIPVersion({
-    DNSName: 'example.com',
-    RecordType: 'A',
-    Targets: opts.inputTargets,
-  });
+  const splitEndpoints = splitIntoV4andV6(opts.inputTargets);
 
   // Check number of resulting endpoints
-  const expectedCount = [opts.expectedIPv4Targets, opts.expectedIPv6Targets]
-    .map<number>(x => x.length > 0 ? 1 : 0)
-    .reduce((a,b) => a+b, 0);
-  assertEquals(splitEndpoints.length, expectedCount, 'Wrong number of endpoints emitted');
+  assertEquals(splitEndpoints.length, opts.inputTargets.length, 'Wrong number of endpoints emitted');
 
-  if (opts.expectedIPv4Targets.length > 0) {
-    const v4Endpoints = splitEndpoints.filter(x => x.RecordType === 'A');
-    assertEquals(v4Endpoints.length, 1);
-    assertEquals(v4Endpoints[0].Targets, opts.expectedIPv4Targets);
-  }
+  const v4Targets = splitEndpoints.filter(x => x.type === 'A').map(x => x.target);
+  assertEquals(v4Targets, opts.expectedIPv4Targets);
 
-  if (opts.expectedIPv6Targets.length > 0) {
-    const v6Endpoints = splitEndpoints.filter(x => x.RecordType === 'AAAA');
-    assertEquals(v6Endpoints.length, 1);
-    assertEquals(v6Endpoints[0].Targets, opts.expectedIPv6Targets);
-  }
+  const v6Targets = splitEndpoints.filter(x => x.type === 'AAAA').map(x => x.target);;
+  assertEquals(v6Targets, opts.expectedIPv6Targets);
 }

@@ -1,5 +1,8 @@
-import { CrdSourceConfig, DnsSource, Endpoint, SplitOutTarget, WatchLister } from "../common/mod.ts";
 import { ExternaldnsV1alpha1Api, KubernetesClient } from '../deps.ts';
+
+import type { CrdSourceConfig } from "../config.ts";
+import type { DnsSource, SourceRecord, PlainRecordData } from "../types.ts";
+import { WatchLister } from "./lib/watch-lister.ts";
 
 export class CrdSource implements DnsSource {
 
@@ -16,53 +19,91 @@ export class CrdSource implements DnsSource {
     opts => this.crdApi.watchDNSEndpointListForAllNamespaces({ ...opts }),
     crd => [crd.metadata?.annotations, crd.spec]);
 
-  async Endpoints() {
-    const endpoints = new Array<Endpoint>();
+  #finalizers = new Map<string, () => Promise<unknown>>();
+
+  async ListRecords() {
+    const endpoints = new Array<SourceRecord>();
 
     for await (const node of this.watchLister.getFreshList(this.config.annotation_filter)) {
-      if (!node.metadata?.name || !node.metadata?.namespace || !node.spec?.endpoints) continue;
+      const {name, namespace, generation} = node.metadata ?? {};
+      if (!name || !namespace || !node.spec?.endpoints) continue;
+
+      const annotations = node.metadata?.annotations ?? {};
+      const resourceKey = `crd/${namespace}/${name}`;
 
       for (const rule of node.spec.endpoints) {
         if (!rule.dnsName || !rule.recordType || !rule.targets?.length) continue;
-        const endpoint: Endpoint = {
-          DNSName: rule.dnsName,
-          RecordType: rule.recordType,
-          Targets: rule.targets,
-          Labels: {
-            'external-dns/resource': `crd/${node.metadata.namespace}/${node.metadata.name}`,
-            ...(rule.labels || {}),
-          },
-          RecordTTL: rule.recordTTL ?? undefined,
-          ProviderSpecific: (rule.providerSpecific ?? []).map(x => ({Name: x.name ?? '', Value: x.value ?? ''})),
-        };
 
-        // TODO: also SRV
-        if (endpoint.RecordType === 'MX') {
-          const allPrios = new Set(endpoint.Targets.map(x => x.split(' ')[0]));
-          for (const priority of Array.from(allPrios)) {
-            const subEndpoint = SplitOutTarget(endpoint, x => x.split(' ')[0] === priority)[0];
-            subEndpoint.Priority = parseInt(priority);
-            subEndpoint.Targets = subEndpoint.Targets.map(x => x.split(' ')[1]);
-            endpoints.push(subEndpoint);
-          }
-        } else {
-          endpoints.push(endpoint);
+        if (rule.providerSpecific?.length) {
+          console.error(`WARN: CRD 'providerSpecific' field is not currently used by dns-sync`);
+        }
+        if (Object.keys(rule.labels ?? {}).length) {
+          console.error(`WARN: CRD 'labels' field is not currently used by dns-sync`);
+        }
+
+        const records = new Array<PlainRecordData>();
+        const type = rule.recordType;
+        switch (type) {
+
+          case 'A':
+          case 'AAAA':
+            for (const target of rule.targets) {
+              records.push({ type, target });
+            }
+            break;
+
+          case 'CNAME':
+          case 'NS':
+            for (const raw of rule.targets) {
+              const target = raw.replace(/\.$/, '');
+              records.push({ type, target });
+            }
+            break;
+
+          case 'TXT':
+            for (const content of rule.targets) {
+              if (content.startsWith('"')) throw new Error(
+                `Looks like ${rule.dnsName} TXT CRD has extra-quoted values`);
+              records.push({ type, content });
+            }
+            break;
+        }
+
+        for (const record of records) {
+          endpoints.push({
+            resourceKey,
+            annotations,
+            dns: {
+              fqdn: rule.dnsName,
+              ttl: rule.recordTTL,
+              ...record,
+            }});
         }
       }
 
       // mark in status subresource that we saw the record
       // TODO: this probably shouldn't be done until we made the change
-      if (node.metadata.generation && node.status?.observedGeneration !== node.metadata.generation) {
-        await this.crdApi
-          .namespace(node.metadata.namespace)
-          .patchDNSEndpointStatus(node.metadata.name, 'json-merge', {
+      if (generation && node.status?.observedGeneration !== generation) {
+        this.#finalizers.set(resourceKey, () => this.crdApi
+          .namespace(namespace)
+          .replaceDNSEndpointStatus(name, {
             status: {
-              observedGeneration: node.metadata.generation,
-            }}).catch(err => console.warn('Failed to observe DNSEndpoint CRD:', err.message));
+              observedGeneration: generation,
+            }})
+          .catch(err => console.warn('Failed to observe DNSEndpoint CRD:', err.message)));
       }
 
     }
     return endpoints;
+  }
+
+  async ObserveResource(resourceKey: string) {
+    const finalizer = this.#finalizers.get(resourceKey);
+    if (finalizer) {
+      this.#finalizers.delete(resourceKey);
+      console.debug('   ', 'Observing', resourceKey);
+      await finalizer();
+    }
   }
 
   MakeEventSource() {

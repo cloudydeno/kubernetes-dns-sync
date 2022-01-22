@@ -5,7 +5,10 @@ on:
     branches: [ main ]
     tags: [ v* ]
     paths-ignore:
-      - 'examples/**'
+      - 'helm-chart/**'
+      - 'manifests/**'
+      - 'configs/**'
+      - '*.md'
   pull_request: {}
 
 jobs:
@@ -42,9 +45,11 @@ jobs:
         restore-keys: deno-https/v1-
 
     - name: Check src/controller/mod.ts
+      if: always()
       run: time deno cache src/controller/mod.ts
 
     - name: Run test suite
+      if: always()
       run: time deno test
 
   # Push image to GitHub Packages.
@@ -62,8 +67,11 @@ jobs:
           IMAGE_ID=ghcr.io/${{ github.repository }}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          [ "$VERSION" == "main" ] && VERSION=latest
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]
+          then VERSION=$(echo $VERSION | sed -e 's/^v//')
+          else VERSION=${{ github.sha }}
+          fi
+          # [ "$VERSION" == "main" ] && VERSION=latest
           echo "Will push to $IMAGE_ID:$VERSION"
           echo "::set-output name=image::$IMAGE_ID:$VERSION"
 
@@ -103,9 +111,12 @@ jobs:
           IMAGE_ID=ghcr.io/${{ github.repository }}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]
+          then VERSION=$(echo $VERSION | sed -e 's/^v//')
+          else VERSION=${{ github.sha }}
+          fi
           TAG=$VERSION-multiarch
-          [ "$TAG" == "main-multiarch" ] && TAG=multiarch
+          # [ "$TAG" == "main-multiarch" ] && TAG=multiarch
           echo "Will push to $IMAGE_ID:$TAG"
           echo "::set-output name=image::$IMAGE_ID:$TAG"
 

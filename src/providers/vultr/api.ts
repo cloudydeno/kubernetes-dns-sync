@@ -115,7 +115,17 @@ export interface DomainList {
 };
 
 export interface DnsRecordData {
-  type: string;
+  type:
+    | 'A'
+    | 'AAAA'
+    | 'CNAME'
+    | 'NS'
+    | 'MX'
+    | 'SRV'
+    | 'TXT'
+    | 'CAA'
+    | 'SSHFP'
+  ;
   name: string;
   data: string;
   priority?: number;
