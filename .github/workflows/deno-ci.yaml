@@ -67,8 +67,11 @@ jobs:
           IMAGE_ID=ghcr.io/${{ github.repository }}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          [ "$VERSION" == "main" ] && VERSION=latest
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]
+          then VERSION=$(echo $VERSION | sed -e 's/^v//')
+          else VERSION=${{ github.sha }}
+          fi
+          # [ "$VERSION" == "main" ] && VERSION=latest
           echo "Will push to $IMAGE_ID:$VERSION"
           echo "::set-output name=image::$IMAGE_ID:$VERSION"
 
@@ -108,9 +111,12 @@ jobs:
           IMAGE_ID=ghcr.io/${{ github.repository }}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]
+          then VERSION=$(echo $VERSION | sed -e 's/^v//')
+          else VERSION=${{ github.sha }}
+          fi
           TAG=$VERSION-multiarch
-          [ "$TAG" == "main-multiarch" ] && TAG=multiarch
+          # [ "$TAG" == "main-multiarch" ] && TAG=multiarch
           echo "Will push to $IMAGE_ID:$TAG"
           echo "::set-output name=image::$IMAGE_ID:$TAG"
 
