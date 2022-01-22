@@ -5,8 +5,8 @@ import { getPlainRecordKey } from "./endpoints.ts";
 
 
 const exampleZone: Zone = {
-  DNSName: "example.com",
-  ZoneID: "ex",
+  fqdn: "example.com",
+  zoneId: "ex",
 };
 const aRecord = (target: string): BaseRecord => ({ dns: {
   fqdn: 'app.example.com',

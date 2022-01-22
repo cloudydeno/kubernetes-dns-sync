@@ -26,7 +26,7 @@ Deno.test('Vultr integration test', async () => {
       },
     }]);
 
-    const result = await provider.ListRecords({ DNSName: 'kubernetes-dns-sync.com', ZoneID: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
+    const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 1);
     assertObjectMatch(result[0].dns, {
       "fqdn": "www.kubernetes-dns-sync.com",
@@ -47,7 +47,7 @@ Deno.test('Vultr integration test', async () => {
       },
     }]);
 
-    const result = await provider.ListRecords({ DNSName: 'kubernetes-dns-sync.com', ZoneID: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
+    const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 1);
     assertObjectMatch(result[0].dns, {
       "fqdn": "www.kubernetes-dns-sync.com",
@@ -69,7 +69,7 @@ Deno.test('Vultr integration test', async () => {
       },
     }]);
 
-    const result = await provider.ListRecords({ DNSName: 'kubernetes-dns-sync.com', ZoneID: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
+    const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 1);
     assertObjectMatch(result[0].dns, {
       "fqdn": "www.kubernetes-dns-sync.com",
@@ -98,7 +98,7 @@ Deno.test('Vultr integration test', async () => {
       },
     }]);
 
-    const result = await provider.ListRecords({ DNSName: 'kubernetes-dns-sync.com', ZoneID: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
+    const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 2);
     assertObjectMatch(result[0].dns, {
       "fqdn": "www.kubernetes-dns-sync.com",
@@ -125,7 +125,7 @@ Deno.test('Vultr integration test', async () => {
       },
     }]);
 
-    const result = await provider.ListRecords({ DNSName: 'kubernetes-dns-sync.com', ZoneID: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
+    const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 1);
     assertObjectMatch(result[0].dns, {
       "fqdn": "www.kubernetes-dns-sync.com",
@@ -138,7 +138,7 @@ Deno.test('Vultr integration test', async () => {
   {
     await applyToProvider(provider, registry, []);
 
-    const result = await provider.ListRecords({ DNSName: 'kubernetes-dns-sync.com', ZoneID: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
+    const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 0);
   }
 
@@ -166,7 +166,7 @@ Deno.test('Vultr integration test: MX', async () => {
       },
     }]);
 
-    const result = await provider.ListRecords({ DNSName: 'kubernetes-dns-sync.com', ZoneID: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
+    const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 1);
     console.log(result[0])
     assertObjectMatch(result[0].dns, {
@@ -208,7 +208,7 @@ Deno.test('Vultr integration test: MX', async () => {
       },
     }]);
 
-    const result = await provider.ListRecords({ DNSName: 'kubernetes-dns-sync.com', ZoneID: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
+    const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 3);
     assertObjectMatch(result[0].dns, {
       "fqdn": "kubernetes-dns-sync.com",
@@ -236,7 +236,7 @@ Deno.test('Vultr integration test: MX', async () => {
   {
     await applyToProvider(provider, registry, []);
 
-    const result = await provider.ListRecords({ DNSName: 'kubernetes-dns-sync.com', ZoneID: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
+    const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 0);
   }
 

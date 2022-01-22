@@ -19,10 +19,6 @@ export { ExternaldnsV1alpha1Api } from "https://deno.land/x/kubernetes_apis@v0.3
 export {
   ServiceAccount,
 } from "https://crux.land/CtNDQ#google-service-account";
-export {
-  intersection,
-  union,
-} from "https://crux.land/4y3NGo#set-util";
 export * as SetUtil from "https://crux.land/4y3NGo#set-util";
 
 export { runMetricsServer } from "https://deno.land/x/observability@v0.1.2/sinks/openmetrics/server.ts";

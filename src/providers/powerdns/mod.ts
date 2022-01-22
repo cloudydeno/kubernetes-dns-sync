@@ -7,6 +7,9 @@ import {
 import { transformFromRrdata, transformToRrdata } from "../../common/rrdata.ts";
 import { DnsRecordSet, PowerDnsApi } from "./api.ts";
 
+// TODO: SRV and MX do not strictly follow rrdata; priority has its own slot
+// https://doc.powerdns.com/authoritative/appendices/types.html
+
 export class PowerDnsProvider implements DnsProvider<BaseRecord> {
   constructor(
     public config: PowerDnsProviderConfig,
@@ -23,7 +26,7 @@ export class PowerDnsProvider implements DnsProvider<BaseRecord> {
     for (const zone of await this.api.listAllZones()) {
       const fqdn = zone.name.replace(/\.$/, '');
       if (domainFilter.size > 0 && !domainFilter.has(fqdn)) continue;
-      zones.push({DNSName: fqdn, ZoneID: zone.id});
+      zones.push({fqdn: fqdn, zoneId: zone.id});
     }
     return zones;
   }
@@ -53,7 +56,7 @@ export class PowerDnsProvider implements DnsProvider<BaseRecord> {
 
   async ListRecords(zone: Zone): Promise<BaseRecord[]> {
     const endpoints = new Array<BaseRecord>(); // every recordset we find
-    const zoneData = await this.api.getZone(zone.DNSName);
+    const zoneData = await this.api.getZone(zone.fqdn);
     for (const recordSet of zoneData.rrsets) {
       for (const record of recordSet.records) {
         // if (re)
@@ -71,7 +74,7 @@ export class PowerDnsProvider implements DnsProvider<BaseRecord> {
   }
 
   async ApplyChanges(changes: ZoneState<BaseRecord>): Promise<void> {
-    console.log('powerdns: Have', changes.Diff?.length, 'changes for', changes.Zone.DNSName);
+    console.log('powerdns: Have', changes.Diff?.length, 'changes for', changes.Zone.fqdn);
 
     const patch: DnsRecordSet[] = changes.Diff!.map(change => {
       const firstDesired = (change.desired[0] || change.existing[0]);
@@ -93,7 +96,7 @@ export class PowerDnsProvider implements DnsProvider<BaseRecord> {
       console.log('powerdns: -', item.changetype, 'on', item.name, item.type, item.ttl, 'to', item.records);
     }
 
-    await this.api.patchZoneRecords(changes.Zone.ZoneID, patch);
+    await this.api.patchZoneRecords(changes.Zone.zoneId, patch);
   }
 
 }

@@ -29,11 +29,11 @@ export interface DnsRegistry<
 /** Zone is a basic structure indicating what DNS names are available */
 export interface Zone {
 	/** The hostname of the DNS zone, without trailing dot */
-	DNSName: string;
+	fqdn: string;
 	/** The vanity name of the DNS zone, if any */
-	ZoneName?: string;
+	zoneName?: string;
 	/** The provider's opaque ID for this zone. */
-	ZoneID: string;
+	zoneId: string;
 }
 
 export interface SourceRecord extends BaseRecord {
@@ -43,10 +43,6 @@ export interface SourceRecord extends BaseRecord {
   annotations: Record<string, string>;
 }
 export interface BaseRecord {
-	/**  */
-	// zoneId: string;
-	/** NON-UNIQUE identifier for this DNSrecord */
-	// externalId?: string;
 	/** The actual DNS data */
 	dns: PlainRecord;
 }

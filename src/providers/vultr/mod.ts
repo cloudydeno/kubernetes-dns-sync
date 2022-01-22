@@ -32,15 +32,15 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
     const domainFilter = new Set(this.config.domain_filter ?? []);
     for await (const {domain} of this.api.listAllZones()) {
       if (domainFilter.size > 0 && !domainFilter.has(domain)) continue;
-      zones.push({ DNSName: domain, ZoneID: domain });
+      zones.push({ fqdn: domain, zoneId: domain });
     }
     return zones;
   }
 
   async ListRecords(zone: Zone): Promise<VultrRecord[]> {
     const records = new Array<VultrRecord>();
-    for await (const record of this.api.listAllRecords(zone.DNSName)) {
-      const recordData = transformFromApi(zone.DNSName, record);
+    for await (const record of this.api.listAllRecords(zone.fqdn)) {
+      const recordData = transformFromApi(zone.fqdn, record);
       if (!recordData) continue;
       records.push({
         recordId: record.id,
@@ -78,17 +78,17 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
     for (const diff of state.Diff) {
       for (const deletion of diff.toDelete) {
         if (!deletion.recordId) throw new Error(`BUG: deleting ID-less Vultr record`);
-        await this.api.deleteRecord(state.Zone.ZoneID, deletion.recordId);
+        await this.api.deleteRecord(state.Zone.zoneId, deletion.recordId);
       }
       for (const update of diff.toUpdate) {
         if (!update.existing.recordId) throw new Error(`BUG: updating ID-less Vultr record`);
-        const record = transformForApi(state.Zone.DNSName, update.desired.dns);
-        await this.api.updateRecord(state.Zone.ZoneID, update.existing.recordId, record);
+        const record = transformForApi(state.Zone.fqdn, update.desired.dns);
+        await this.api.updateRecord(state.Zone.zoneId, update.existing.recordId, record);
       }
       for (const creation of diff.toCreate) {
         if (creation.recordId) throw new Error(`BUG: creating ID-having Vultr record`);
-        const record = transformForApi(state.Zone.DNSName, creation.dns);
-        await this.api.createRecord(state.Zone.ZoneID, record);
+        const record = transformForApi(state.Zone.fqdn, creation.dns);
+        await this.api.createRecord(state.Zone.zoneId, record);
       }
     }
   }

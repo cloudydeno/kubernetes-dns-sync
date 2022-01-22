@@ -28,7 +28,7 @@ export class NoopRegistry<T extends BaseRecord> implements DnsRegistry<T> {
 
     // Also copy in any zone-critical root records
     for (const record of state.Existing) {
-      if (record.dns.fqdn == state.Zone.DNSName) {
+      if (record.dns.fqdn == state.Zone.fqdn) {
         if (ZoneCriticalTypes.has(record.dns.type)) {
           state.Desired.push(record);
         }

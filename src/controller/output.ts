@@ -43,27 +43,24 @@ export async function discoverProviderChanges<T extends BaseRecord>(
 ) {
   console.log(p3, 'Listing zones for', providerId, '...');
   const zoneList = await providerCtx.ListZones();
-  console.log(p2, 'Found', zoneList.length, 'DNS zones:', zoneList.map(x => x.DNSName));
+  console.log(p2, 'Found', zoneList.length, 'DNS zones:', zoneList.map(x => x.fqdn));
 
   const byZone = new Array<ZoneState<T>>();
   for (const zone of zoneList) {
-    console.log(p3, 'Loading existing records from', providerId, zone.DNSName, '...');
+    console.log(p3, 'Loading existing records from', providerId, zone.fqdn, '...');
     const state: ZoneState<T> = {
       Zone: zone,
       Existing: await providerCtx.ListRecords(zone),
     };
+
     // console.log(p3, 'Recognizing ownership labels on', state.Existing.length, 'records...');
-    // const innerState = await registryCtx.RecognizeLabels(state);
-    // console.log(p2, 'Found', innerState.Existing.length, 'existing records from', providerId, zone.DNSName);
+    // console.log(p2, 'Found', innerState.Existing.length, 'existing records from', providerId, zone.fqdn);
 
     const rawDesired = sourceRecords
-      .filter(x => x.dns.fqdn == zone.DNSName || x.dns.fqdn.endsWith(`.${zone.DNSName}`));
+      .filter(x => x.dns.fqdn == zone.fqdn || x.dns.fqdn.endsWith(`.${zone.fqdn}`));
     console.log(p2, 'Found', rawDesired.length, 'relevant source records');
 
     await registryCtx.ApplyDesiredRecords(state, rawDesired, r => providerCtx.EnrichSourceRecord(r));
-
-    // console.log(p3, 'Encoding changed ownership labels...');
-    // const outerState = await registryCtx.CommitLabels(innerState, r => providerCtx.EnrichSourceRecord(r));
 
     state.Diff = buildDiff(state, providerCtx);
     const toCreate = state.Diff.filter(x => x.type == 'creation').length;
@@ -79,25 +76,24 @@ export async function discoverProviderChanges<T extends BaseRecord>(
 export function printChanges<T extends BaseRecord>(changes: ZoneState<T>) {
 
   for (const change of changes.Diff ?? []) {
-
     console.log(p2, `- ${change.type}:`, JSON.stringify(change));
   }
 
   // for (const rec of changes.toCreate) {
   //   console.log(p2, '- Create:', JSON.stringify(rec.dns));
   //   // if (rec.RecordType === 'TXT') { // long records
-  //   //   console.log(p2, '- Create:', rec.RecordType, rec.DNSName);
+  //   //   console.log(p2, '- Create:', rec.RecordType, rec.fqdn);
   //   //   for (const targetVal of rec.Targets) {
   //   //     console.log(p3, '    new:', targetVal);
   //   //   }
   //   // } else {
-  //   //   console.log(p2, '- Create:', rec.RecordType, rec.DNSName, rec.Targets);
+  //   //   console.log(p2, '- Create:', rec.RecordType, rec.fqdn, rec.Targets);
   //   // }
   // }
 
   // // for (const [recOld, recNew] of changes.Update) {
   // //   if (recOld.RecordType === 'TXT') { // long records
-  // //     console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName);
+  // //     console.log(p2, '- Update:', recOld.RecordType, recOld.fqdn);
   // //     for (const targetVal of recOld.Targets) {
   // //       console.log(p3, '    old:', targetVal);
   // //     }
@@ -105,7 +101,7 @@ export function printChanges<T extends BaseRecord>(changes: ZoneState<T>) {
   // //       console.log(p3, '    new:', targetVal);
   // //     }
   // //   } else {
-  // //     console.log(p2, '- Update:', recOld.RecordType, recOld.DNSName, recOld.Targets, '->', recNew.Targets);
+  // //     console.log(p2, '- Update:', recOld.RecordType, recOld.fqdn, recOld.Targets, '->', recNew.Targets);
   // //   }
   // // }
 

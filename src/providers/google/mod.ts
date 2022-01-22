@@ -42,7 +42,7 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
     for await (const zone of this.api.listAllZones(this.projectId)) {
       if (zoneFilter.size > 0 && !zoneFilter.has(zone.name!)) continue;
       if (domainFilter.size > 0 && !domainFilter.has(zone.dnsName!)) continue;
-      zones.push({DNSName: zone.dnsName!.replace(/\.$/, ''), ZoneName: zone.name!, ZoneID: zone.id!});
+      zones.push({fqdn: zone.dnsName!.replace(/\.$/, ''), zoneName: zone.name!, zoneId: zone.id!});
     }
     return zones;
   }
@@ -72,7 +72,7 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
 
   async ListRecords(zone: Zone): Promise<GoogleRecord[]> {
     const endpoints = new Array<GoogleRecord>(); // every recordset we find
-    for await (const record of this.api.listAllRecords(this.projectId, zone.ZoneID)) {
+    for await (const record of this.api.listAllRecords(this.projectId, zone.zoneId)) {
       const dnsName = record.name!.replace(/\.$/, '');
 
       for (const rrdata of record.rrdatas ?? []) {
@@ -122,15 +122,15 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
     // Actually submit the changes
     if (change.additions!.length < 1 && change.deletions!.length < 1) return;
 
-    console.log('-->', 'Cloud DNS zone', zone.ZoneName,
+    console.log('-->', 'Cloud DNS zone', zone.zoneName,
       '-', change.deletions!.length, 'deletions',
       '-', change.additions!.length, 'additions');
 
     let submitted: Schema$Change = await this.api
-      .submitChange(this.projectId, zone.ZoneID, change);
+      .submitChange(this.projectId, zone.zoneId, change);
 
     console.log('==>', 'Cloud DNS change', submitted.id,
-      'on', zone.ZoneName,
+      'on', zone.zoneName,
       'at', submitted.startTime,
       'is', submitted.status);
 
@@ -141,7 +141,7 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
       await new Promise(ok => setTimeout(ok, sleepSecs * 1000));
 
       submitted = await this.api
-        .getChange(this.projectId, zone.ZoneID, submitted.id!);
+        .getChange(this.projectId, zone.zoneId, submitted.id!);
 
       console.log('   ', 'Cloud DNS change', submitted.id,
         'is', submitted.status);

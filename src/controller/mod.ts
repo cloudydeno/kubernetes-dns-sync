@@ -49,7 +49,7 @@ for await (const tickSource of createTickStream(config, sources)) {
     for (const diff of rawChanges) {
 
       if (diff.Diff!.length === 0) {
-        console.log(p2, 'Provider', providerId, 'has no necesary changes for', diff.Zone.DNSName);
+        console.log(p2, 'Provider', providerId, 'has no necesary changes for', diff.Zone.fqdn);
         continue;
       }
 
@@ -63,7 +63,7 @@ for await (const tickSource of createTickStream(config, sources)) {
       const toUpdate = diff.Diff!.filter(x => x.type == 'update').length;
       const toDelete = diff.Diff!.filter(x => x.type == 'deletion').length;
 
-      console.log(p1, 'Submitting', toCreate, 'to create,', toUpdate, 'to update,', toDelete, 'to delete', 'to', providerId, 'for', diff.Zone.DNSName, '...');
+      console.log(p1, 'Submitting', toCreate, 'to create,', toUpdate, 'to update,', toDelete, 'to delete', 'to', providerId, 'for', diff.Zone.fqdn, '...');
       await provider.ApplyChanges(diff);
     }
 

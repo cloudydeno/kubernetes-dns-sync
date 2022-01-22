@@ -1,4 +1,4 @@
-import { intersection } from "../deps.ts";
+import { SetUtil } from "../deps.ts";
 import { BaseRecord, ZoneState, DnsProvider, RecordGroupDiff } from "./contract.ts";
 
 // TODO: the grouping/comparision keys should probably be enriched once directly onto the records
@@ -12,7 +12,7 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
 
   const existingGroups = new Set(existingWithGroup.map(x => x.key));
   const desiredGroups = new Set(desiredWithGroup.map(x => x.key));
-  const intersectingGroups = intersection(existingGroups, desiredGroups);
+  const intersectingGroups = SetUtil.intersection(existingGroups, desiredGroups);
 
   for (const groupKey of existingGroups) {
     if (intersectingGroups.has(groupKey)) continue;
@@ -54,7 +54,7 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
       .filter(x => x.key == groupKey)
       .map(x => ({ key: rules.ComparisionKey(x.record), record: x.record }));
 
-    const intersectingKeys = intersection(
+    const intersectingKeys = SetUtil.intersection(
       new Set(existing.map(x => x.key)),
       new Set(desired.map(x => x.key)));
 
