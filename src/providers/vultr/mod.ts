@@ -51,12 +51,18 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
   }
 
   EnrichSourceRecord(record: SourceRecord): VultrRecord | null {
+    let ttl = record.dns.ttl ?? ttlFromAnnotations(record.annotations) ?? 120;
+    if (ttl < 120) {
+      // console.error(`WARN: Record ${record.dns.fqdn} had a TTL of ${ttl}. Clamping to 120 for Vultr.`);
+      ttl = 120;
+    };
+
     if (record.dns.type in supportedRecords) {
       return {
         ...record,
         dns: {
           ...record.dns,
-          ttl: record.dns.ttl ?? ttlFromAnnotations(record.annotations) ?? 120
+          ttl,
         },
       };
     }

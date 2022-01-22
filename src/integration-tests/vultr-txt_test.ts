@@ -99,7 +99,7 @@ Deno.test("[E2E: Vultr & TXT] Update changed A record",
       '"heritage=external-dns,external-dns/owner=dnssynctest,external-dns/resource=e2e,record-type/A=managed"' },
   }]).go());
 
-Deno.test("[E2E: Vultr & TXT] Remove abandoned A record",
+Deno.test("[E2E: Vultr & TXT] Remove our abandoned A record",
   async () => await mockedVultrTest({
     sourceRecords: [],
   }).withZone('example.com', [{
@@ -109,6 +109,37 @@ Deno.test("[E2E: Vultr & TXT] Remove abandoned A record",
     expect: 'deletion',
     data: { name: 'www', type: 'TXT', data:
       '"heritage=external-dns,external-dns/owner=dnssynctest,external-dns/resource=e2e,record-type/A=managed"' },
+  }]).go());
+
+Deno.test("[E2E: Vultr & TXT] Leave unmanaged records alone",
+  async () => await mockedVultrTest({
+    sourceRecords: [],
+  }).withZone('example.com', [{
+    expect: 'retained',
+    data: { name: 'www', type: 'A', data: '1.1.1.1' },
+  }, {
+    expect: 'retained',
+    data: { name: '', type: 'NS', data: 'ns.example' },
+  }, {
+    expect: 'retained',
+    data: { name: 'www', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=otherapp,external-dns/resource=e2e,record-type/A=managed"' },
+  }]).go());
+
+Deno.test("[E2E: Vultr & TXT] Be v careful around registry records",
+  async () => await mockedVultrTest({
+    sourceRecords: [],
+  }).withZone('example.com', [{
+    expect: 'retained',
+    data: { name: 'other', type: 'AAAA', data: '::1' },
+  }, {
+    expect: 'deletion',
+    data: { name: 'self', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=dnssynctest,external-dns/resource=e2e,record-type/A=managed"' },
+  }, {
+    expect: 'retained',
+    data: { name: 'other', type: 'TXT', data:
+      '"heritage=external-dns,external-dns/owner=otherapp,external-dns/resource=e2e,record-type/AAAA=managed"' },
   }]).go());
 
 Deno.test("[E2E: Vultr & TXT] Add new A record",

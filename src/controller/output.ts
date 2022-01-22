@@ -6,6 +6,7 @@ import {
   BaseRecord,
   ZoneState,
 } from "../common/mod.ts";
+import { transformToRrdata } from "../common/rrdata.ts";
 // import { Planner } from "./planner.ts";
 
 export const p3 = '   ';
@@ -35,7 +36,7 @@ export async function loadSourceEndpoints(sources: Array<{
   return sourceRecords;
 }
 
-export async function discoverProviderChanges<T extends BaseRecord>(
+export async function* discoverProviderChanges<T extends BaseRecord>(
   registryCtx: DnsRegistry<T>,
   providerId: string,
   providerCtx: DnsProvider<T>,
@@ -45,7 +46,6 @@ export async function discoverProviderChanges<T extends BaseRecord>(
   const zoneList = await providerCtx.ListZones();
   console.log(p2, 'Found', zoneList.length, 'DNS zones:', zoneList.map(x => x.fqdn));
 
-  const byZone = new Array<ZoneState<T>>();
   for (const zone of zoneList) {
     console.log(p3, 'Loading existing records from', providerId, zone.fqdn, '...');
     const state: ZoneState<T> = {
@@ -68,16 +68,41 @@ export async function discoverProviderChanges<T extends BaseRecord>(
     const toDelete = state.Diff.filter(x => x.type == 'deletion').length;
     console.log(p3, 'Planner changes:', toCreate, 'to create,', toUpdate, 'to update,', toDelete, 'to delete');
 
-    byZone.push(state);
+    yield state;
   }
-  return byZone;
+}
+
+function printRecord(prefix: string, record: BaseRecord) {
+  const rrdata = transformToRrdata(record.dns);
+  const data: Record<string, unknown> = {'ttl': record.dns.ttl};
+  if (rrdata.length > 60) {
+    console.log(p3, prefix, data, ':');
+    console.log(p3, '  -', rrdata);
+  } else {
+    data['record'] = rrdata;
+    console.log(p3, prefix, data);
+  }
 }
 
 export function printChanges<T extends BaseRecord>(changes: ZoneState<T>) {
+  console.group(p3, 'Planned', changes.Diff?.length, 'changes in', changes.Zone.fqdn, ':');
 
   for (const change of changes.Diff ?? []) {
-    console.log(p2, `- ${change.type}:`, JSON.stringify(change));
+    const [sample] = [...change.desired, ...change.existing];
+    console.log(p2, {type: sample.dns.type}, sample.dns.fqdn);
+
+    for (const rec of change.toCreate) {
+      printRecord('create', rec);
+    }
+    for (const rec of change.toUpdate) {
+      printRecord('replace before', rec.existing);
+      printRecord('replace after', rec.desired);
+    }
+    for (const rec of change.toDelete) {
+      printRecord('delete', rec);
+    }
   }
+  console.groupEnd();
 
   // for (const rec of changes.toCreate) {
   //   console.log(p2, '- Create:', JSON.stringify(rec.dns));

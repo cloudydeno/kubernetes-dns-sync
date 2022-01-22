@@ -51,8 +51,15 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
     //   - as long as we have or can establish ownership!
     // DESIRED FRESH: Calculate our own registry records
 
-    // Figure out what we're comfortable adding
+    // Figure out what we're comfortable managing
     const relevantFqdns = new Set(desiredBySources.map(x => x.dns.fqdn));
+    for (const ownership of ownershipRecords) {
+      if (!ownership.isOurs) continue;
+      relevantFqdns.add(ownership.targetFqdn);
+    }
+
+    const managedByUs = new Set<string>();
+
     for (const fqdn of relevantFqdns) {
       const ourRecords = desiredBySources.filter(x => x.dns.fqdn == fqdn);
       const existingOwnerships = ownershipRecords.filter(x => x.targetFqdn == fqdn);
@@ -69,6 +76,10 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
           // console.log({t: ourOwnership.targetTypes, desiredTypes})
           if (SetUtil.isSuperset(ourOwnership.targetTypes, desiredTypes)) {
             // We are good!
+            // Make sure we pay attention to everything we're supposedly managing:
+            for (const type of ourOwnership.targetTypes) {
+              allowedTypes.add(type);
+            }
           } else {
             throw new Error(`TODO: our existing registration isn't wide enough`);
           }
@@ -84,7 +95,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
 
               if (ownership.isAdoptable) {
                 // TODO: any further safety checks on adoption?
-                console.error(`WARN: adopting FQDN ${fqdn} from ${ownership.labels}`);
+                console.error(`WARN: adopting FQDN ${fqdn} from`, ownership.labels['external-dns/owner']);
                 stateDesired.delete(ownership.record); // Delete the other ownership record
                 areWeAdopting = true;
                 break; // This ownership record does not need further consideration
@@ -96,7 +107,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
           } else {
             if (ownership.isAdoptable) {
               // TODO: any further safety checks on adoption?
-              console.error(`WARN: adopting FQDN ${fqdn} from`, ownership.labels);
+              console.error(`WARN: adopting FQDN ${fqdn} from`, ownership.labels['external-dns/owner']);
               stateDesired.delete(ownership.record); // Delete the other ownership record
               areWeAdopting = true;
 
@@ -114,6 +125,11 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
           allowedTypes.delete(existingRecord.dns.type);
         }
         // throw new Error(`TODO: we are not registered for this FQDN yet`);
+      }
+
+      // console.log({desiredTypes, allowedTypes})
+      for (const type of allowedTypes) {
+        managedByUs.add(JSON.stringify([fqdn, type]));
       }
 
       // We are cleared to add some stuff
@@ -139,22 +155,31 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
       if (resourceKeys.size == 1) {
         labels['external-dns/resource'] = Array.from(resourceKeys)[0];
       }
-      for (const type of allowedTypes) {
-        labels[`record-type/${type}`] ='managed';
+      const managedTypes = SetUtil.intersection(desiredTypes, allowedTypes);
+      for (const type of managedTypes) {
+        if (!desiredTypes.has(type)) continue;
+        labels[`record-type/${type}`] = 'managed';
       }
-      // TODO: source resource key
-      const ownerRec = enricher({
-        annotations: {},
-        resourceKey: 'txt-registry',
-        dns: {
-          fqdn: `${this.config.txt_prefix}${fqdn}`,
-          type: 'TXT',
-          content: Object.entries(labels).map(x => x.join('=')).join(','),
-        },
-      });
-      if (!ownerRec) throw new Error(`BUG: didn't get ownership record enriched`);
-      stateDesired.add(ownerRec);
+      if (managedTypes.size > 0) {
+        const ownerRec = enricher({
+          annotations: {},
+          resourceKey: 'txt-registry',
+          dns: {
+            fqdn: `${this.config.txt_prefix}${fqdn}`,
+            type: 'TXT',
+            content: Object.entries(labels).map(x => x.join('=')).join(','),
+          },
+        });
+        if (!ownerRec) throw new Error(`BUG: didn't get ownership record enriched`);
+        stateDesired.add(ownerRec);
+      }
+    }
 
+    // DESIRED AS-IS: existing records that aren't registry or in one of our spots
+    for (const existing of state.Existing) {
+      if (ownershipRecordMap.has(existing)) continue;
+      if (managedByUs.has(JSON.stringify([existing.dns.fqdn, existing.dns.type]))) continue;
+      stateDesired.add(existing);
     }
 
     // console.log('final desired:', stateDesired);
