@@ -1,8 +1,7 @@
 #!/usr/bin/env -S deno test --allow-env --allow-net=api.vultr.com
 
 import { assertEquals, assertObjectMatch } from "https://deno.land/std@0.105.0/testing/asserts.ts";
-import { BaseRecord, DnsProvider, DnsRegistry, SourceRecord, ZoneState } from "../../common/contract.ts";
-import { buildDiff } from "../../common/diff.ts";
+import { applyToProvider } from "../../common/test-utils.ts";
 import { NoopRegistry } from "../../registries/noop.ts";
 import { VultrProvider } from "./mod.ts";
 
@@ -251,23 +250,4 @@ async function resetZone(provider: VultrProvider, zoneName: string) {
   //   method: 'POST',
   //   body: JSON.stringify({name: `${zoneName}.`, kind: 'Native'}),
   // });
-}
-
-async function applyToProvider<Tsource extends BaseRecord, Tinner extends Tsource>(provider: DnsProvider<Tsource>, registry: DnsRegistry<Tsource, Tinner>, source: SourceRecord[]) {
-
-  const zones = await provider.ListZones();
-  assertEquals(zones.length, 1);
-
-  const state = await registry.RecognizeLabels({
-    Zone: zones[0],
-    Existing: await provider.ListRecords(zones[0]),
-    Desired: source
-      .map(x => provider.EnrichSourceRecord(x))
-      .flatMap(x => x ? [x] : []),
-  });
-
-  const secondState = await registry.CommitLabels(state);
-  secondState.Diff = buildDiff(secondState, provider);
-  await provider.ApplyChanges(secondState);
-  return secondState;
 }

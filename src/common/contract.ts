@@ -25,7 +25,7 @@ export interface DnsRegistry<
 	// Tstate extends ZoneState<Tinner>
 > {
 	RecognizeLabels(provider: ZoneState<Tsource>): Promise<ZoneState<Tinner>>;
-	CommitLabels(inner: ZoneState<Tinner>): Promise<ZoneState<Tsource>>;
+	CommitLabels(inner: ZoneState<Tinner>, enricher: (record: SourceRecord) => Tsource | null): Promise<ZoneState<Tsource>>;
 }
 
 /** Zone is a basic structure indicating what DNS names are available */

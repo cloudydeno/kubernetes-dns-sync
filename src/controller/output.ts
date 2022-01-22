@@ -62,7 +62,7 @@ export async function discoverProviderChanges<T extends BaseRecord>(
       .flatMap(x => x ? [x] : []);
 
     console.log(p3, 'Encoding changed ownership labels...');
-    const outerState = await registryCtx.CommitLabels(innerState);
+    const outerState = await registryCtx.CommitLabels(innerState, r => providerCtx.EnrichSourceRecord(r));
 
     outerState.Diff = buildDiff(outerState, providerCtx);
     const toCreate = outerState.Diff.filter(x => x.type == 'creation').length;
