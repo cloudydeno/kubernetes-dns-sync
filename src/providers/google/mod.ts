@@ -3,8 +3,7 @@ import type {
   BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState,
 } from "../../common/types.ts";
 
-import { ttlFromAnnotations } from "../../dns-logic/annotations.ts";
-import { getPlainRecordKey } from "../../dns-logic/endpoints.ts";
+import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
 import { transformFromRrdata, transformToRrdata } from "../../dns-logic/rrdata.ts";
 
 import { GoogleCloudDnsApi, Schema$Change, Schema$ResourceRecordSet } from "./api.ts";
@@ -12,16 +11,6 @@ import { GoogleCloudDnsApi, Schema$Change, Schema$ResourceRecordSet } from "./ap
 interface GoogleRecord extends BaseRecord {
   recordSet?: Schema$ResourceRecordSet;
 }
-
-const supportedRecords = {
-  'A': true,
-  'AAAA': true,
-  'NS': true,
-  'CNAME': true,
-  'TXT': true,
-  'MX': true,
-};
-// TODO: AllSupportedRecords instead (add SRV and SOA)
 
 export class GoogleProvider implements DnsProvider<GoogleRecord> {
   constructor(
@@ -57,17 +46,10 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
   }
 
   EnrichSourceRecord(record: SourceRecord): GoogleRecord | null {
-    if (!(record.dns.type in supportedRecords)) {
-      console.error(`TODO: unsupported record type ${record.dns.type} desired for Google zone at ${record.dns.fqdn}`);
-      return null; // toss unsupported records
-    }
-    return {
-      ...record,
-      dns: {
-        ...record.dns,
-        ttl: record.dns.ttl ?? ttlFromAnnotations(record.annotations) ?? 300
-      },
-    };
+    return enrichSourceRecord(record, {
+      minTtl: 60,
+      defaultTtl: 300,
+    });
   }
 
   async ListRecords(zone: Zone): Promise<GoogleRecord[]> {

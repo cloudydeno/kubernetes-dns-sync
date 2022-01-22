@@ -1,4 +1,7 @@
-import type { PlainRecord, PlainRecordAddress } from "../common/types.ts";
+import type {
+  PlainRecord, PlainRecordAddress,
+  BaseRecord, SourceRecord,
+ } from "../common/types.ts";
 
 export const AllSupportedRecords: Record<PlainRecord['type'], true> = {
   'A': true,
@@ -46,4 +49,25 @@ export function getPlainRecordKey(record: PlainRecord) {
       const _: never = record;
       throw new Error(`unreachable`);
   }
+}
+
+export function enrichSourceRecord<Ttype extends PlainRecord['type']>(record: SourceRecord, opts: {
+  defaultTtl: number,
+  minTtl: number,
+}): BaseRecord | null {
+  if (!(record.dns.type in AllSupportedRecords)) {
+    console.error(`WARN: unsupported desired record type ${record.dns.type} for ${record.dns.fqdn}`);
+    return null; // toss unsupported records
+  }
+
+  const ttlAnnotationRaw = record.annotations['external-dns.alpha.kubernetes.io/ttl'];
+  const ttlAnnotation = ttlAnnotationRaw ? parseInt(ttlAnnotationRaw, 10) : null;
+
+  return {
+    ...record,
+    dns: {
+      ...record.dns,
+      ttl: Math.max(record.dns.ttl ?? ttlAnnotation ?? opts.defaultTtl, opts.minTtl),
+    },
+  };
 }

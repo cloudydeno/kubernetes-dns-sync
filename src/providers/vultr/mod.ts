@@ -3,8 +3,7 @@ import type {
   BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState, PlainRecord,
 } from "../../common/types.ts";
 
-import { ttlFromAnnotations } from "../../dns-logic/annotations.ts";
-import { getPlainRecordKey } from "../../dns-logic/endpoints.ts";
+import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
 
 import { DnsRecord, DnsRecordData, VultrApi, VultrApiSurface } from "./api.ts";
 
@@ -22,6 +21,10 @@ const supportedRecords = {
   'MX': true,
   'SRV': true,
 };
+type UnsupportedRecords = Exclude<PlainRecord['type'], keyof typeof supportedRecords>;
+const unsupportedRecords: Record<UnsupportedRecords, true> = {
+  SOA: true,
+}
 
 export class VultrProvider implements DnsProvider<VultrRecord> {
   constructor(
@@ -53,23 +56,13 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
   }
 
   EnrichSourceRecord(record: SourceRecord): VultrRecord | null {
-    let ttl = record.dns.ttl ?? ttlFromAnnotations(record.annotations) ?? 120;
-    if (ttl < 120) {
-      // console.error(`WARN: Record ${record.dns.fqdn} had a TTL of ${ttl}. Clamping to 120 for Vultr.`);
-      ttl = 120;
-    };
+    if (record.dns.type in unsupportedRecords) throw new Error(
+      `Vultr does not support ${record.dns.type} records.`);
 
-    if (record.dns.type in supportedRecords) {
-      return {
-        ...record,
-        dns: {
-          ...record.dns,
-          ttl,
-        },
-      };
-    }
-    console.error(`TODO: unsupported record type ${record.dns.type} desired for Vultr zone at ${record.dns.fqdn}`);
-    return null; // toss unsupported records
+    return enrichSourceRecord(record, {
+      minTtl: 120,
+      defaultTtl: 120,
+    });
   }
 
   ComparisionKey(record: VultrRecord): string {

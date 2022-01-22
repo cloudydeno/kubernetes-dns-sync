@@ -3,8 +3,7 @@ import type {
   DnsProvider, BaseRecord, Zone, SourceRecord, ZoneState, PlainRecordMX,
 } from "../../common/types.ts";
 
-import { ttlFromAnnotations } from "../../dns-logic/annotations.ts";
-import { AllSupportedRecords, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
+import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
 import { transformFromRrdata, transformToRrdata } from "../../dns-logic/rrdata.ts";
 
 import { DnsRecordSet, PowerDnsApi } from "./api.ts";
@@ -43,17 +42,10 @@ export class PowerDnsProvider implements DnsProvider<BaseRecord> {
   }
 
   EnrichSourceRecord(record: SourceRecord): BaseRecord | null {
-    if (!(record.dns.type in AllSupportedRecords)) {
-      console.error(`TODO: unsupported record type ${record.dns.type} desired for PowerDNS zone at ${record.dns.fqdn}`);
-      return null; // toss unsupported records
-    }
-    return {
-      ...record,
-      dns: {
-        ...record.dns,
-        ttl: record.dns.ttl ?? ttlFromAnnotations(record.annotations) ?? 300
-      },
-    };
+    return enrichSourceRecord(record, {
+      minTtl: 60,
+      defaultTtl: 300,
+    });
   }
 
   async ListRecords(zone: Zone): Promise<BaseRecord[]> {
