@@ -1,30 +1,41 @@
 import {
   NoopRegistryConfig,
   DnsRegistry,
-  BaseRecord, ZoneState,
+  BaseRecord, ZoneState, SourceRecord,
 } from "../common/mod.ts";
+
+const ZoneCriticalTypes = new Set(['SOA', 'NS']);
 
 /**
  * Does absolutely nothing about record ownership.
  * All discovered records are treated as ours, and we are willing to modify any FQDN.
- * EXCEPTION: SOA/NS records at the root are ignored.
+ *
+ * You probably want to look at the first plan before letting this make first changes!
+ *
+ * NOOP EXCEPTION: SOA/NS records at the root are left alone.
  * If you want to manage root SOA/NS without a TXT registry, file an issue.
  */
-export class NoopRegistry<T extends BaseRecord> implements DnsRegistry<T,T> {
+export class NoopRegistry<T extends BaseRecord> implements DnsRegistry<T> {
 
-  constructor(public config: NoopRegistryConfig) {}
+  constructor(public readonly config: NoopRegistryConfig) {}
 
-  RecognizeLabels(provider: ZoneState<T>): Promise<ZoneState<T>> {
-    return Promise.resolve({
-      Zone: provider.Zone,
-      Existing: provider.Existing.filter(x =>
-        !(x.dns.fqdn == provider.Zone.DNSName && ['SOA','NS'].includes(x.dns.type))),
-      Desired: provider.Desired,
-    });
-  }
+  ApplyDesiredRecords(state: ZoneState<T>, desiredBySources: Array<SourceRecord>, enricher: (record: SourceRecord) => T | null) {
 
-  CommitLabels(inner: ZoneState<T>): Promise<ZoneState<T>> {
-    return Promise.resolve(inner);
+    // Just pass thru whatever
+    state.Desired = Array.from(desiredBySources)
+      .map(enricher)
+      .flatMap(x => x ? [x] : []);
+
+    // Also copy in any zone-critical root records
+    for (const record of state.Existing) {
+      if (record.dns.fqdn == state.Zone.DNSName) {
+        if (ZoneCriticalTypes.has(record.dns.type)) {
+          state.Desired.push(record);
+        }
+      }
+    }
+
+    // That's it!
   }
 
 }

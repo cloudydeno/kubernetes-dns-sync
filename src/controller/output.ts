@@ -36,7 +36,7 @@ export async function loadSourceEndpoints(sources: Array<{
 }
 
 export async function discoverProviderChanges<T extends BaseRecord>(
-  registryCtx: DnsRegistry<T,T>,
+  registryCtx: DnsRegistry<T>,
   providerId: string,
   providerCtx: DnsProvider<T>,
   sourceRecords: SourceRecord[],
@@ -48,29 +48,30 @@ export async function discoverProviderChanges<T extends BaseRecord>(
   const byZone = new Array<ZoneState<T>>();
   for (const zone of zoneList) {
     console.log(p3, 'Loading existing records from', providerId, zone.DNSName, '...');
-    const rawState: ZoneState<T> = {
+    const state: ZoneState<T> = {
       Zone: zone,
       Existing: await providerCtx.ListRecords(zone),
     };
-    console.log(p3, 'Recognizing ownership labels on', rawState.Existing.length, 'records...');
-    const innerState = await registryCtx.RecognizeLabels(rawState);
-    console.log(p2, 'Found', innerState.Existing.length, 'existing records from', providerId, zone.DNSName);
+    // console.log(p3, 'Recognizing ownership labels on', state.Existing.length, 'records...');
+    // const innerState = await registryCtx.RecognizeLabels(state);
+    // console.log(p2, 'Found', innerState.Existing.length, 'existing records from', providerId, zone.DNSName);
 
-    innerState.Desired = sourceRecords
-      .filter(x => x.dns.fqdn == zone.DNSName || x.dns.fqdn.endsWith(`.${zone.DNSName}`))
-      .map(x => providerCtx.EnrichSourceRecord(x))
-      .flatMap(x => x ? [x] : []);
+    const rawDesired = sourceRecords
+      .filter(x => x.dns.fqdn == zone.DNSName || x.dns.fqdn.endsWith(`.${zone.DNSName}`));
+    console.log(p2, 'Found', rawDesired.length, 'relevant source records');
 
-    console.log(p3, 'Encoding changed ownership labels...');
-    const outerState = await registryCtx.CommitLabels(innerState, r => providerCtx.EnrichSourceRecord(r));
+    await registryCtx.ApplyDesiredRecords(state, rawDesired, r => providerCtx.EnrichSourceRecord(r));
 
-    outerState.Diff = buildDiff(outerState, providerCtx);
-    const toCreate = outerState.Diff.filter(x => x.type == 'creation').length;
-    const toUpdate = outerState.Diff.filter(x => x.type == 'update').length;
-    const toDelete = outerState.Diff.filter(x => x.type == 'deletion').length;
+    // console.log(p3, 'Encoding changed ownership labels...');
+    // const outerState = await registryCtx.CommitLabels(innerState, r => providerCtx.EnrichSourceRecord(r));
+
+    state.Diff = buildDiff(state, providerCtx);
+    const toCreate = state.Diff.filter(x => x.type == 'creation').length;
+    const toUpdate = state.Diff.filter(x => x.type == 'update').length;
+    const toDelete = state.Diff.filter(x => x.type == 'deletion').length;
     console.log(p3, 'Planner changes:', toCreate, 'to create,', toUpdate, 'to update,', toDelete, 'to delete');
 
-    byZone.push(outerState);
+    byZone.push(state);
   }
   return byZone;
 }

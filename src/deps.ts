@@ -23,6 +23,7 @@ export {
   intersection,
   union,
 } from "https://crux.land/4y3NGo#set-util";
+export * as SetUtil from "https://crux.land/4y3NGo#set-util";
 
 export { runMetricsServer } from "https://deno.land/x/observability@v0.1.2/sinks/openmetrics/server.ts";
 export { replaceGlobalFetch } from "https://deno.land/x/observability@v0.1.2/sources/fetch.ts";

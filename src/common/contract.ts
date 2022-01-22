@@ -21,11 +21,9 @@ export interface DnsSource {
 
 export interface DnsRegistry<
 	Tsource extends BaseRecord,
-	Tinner extends Tsource,
-	// Tstate extends ZoneState<Tinner>
 > {
-	RecognizeLabels(provider: ZoneState<Tsource>): Promise<ZoneState<Tinner>>;
-	CommitLabels(inner: ZoneState<Tinner>, enricher: (record: SourceRecord) => Tsource | null): Promise<ZoneState<Tsource>>;
+	/** Fills in the 'Desired' field of the ZoneState */
+	ApplyDesiredRecords(state: ZoneState<Tsource>, desired: Array<SourceRecord>, enricher: (record: SourceRecord) => Tsource | null): void | Promise<void>;
 }
 
 /** Zone is a basic structure indicating what DNS names are available */
@@ -124,14 +122,6 @@ export interface ZoneState<Trecord extends BaseRecord> {
 	Desired?: Array<Trecord>;
 	Diff?: Array<RecordGroupDiff<Trecord>>;
 }
-
-/** Diff holds lists of actions to be executed by dns providers */
-// export interface ZoneDiff<Trecord extends BaseRecord> {
-// 	state: ZoneState<Trecord>;
-// 	toDelete: Array<Trecord>;
-// 	// TODO: toUpdate: Map<Trecord, Trecord>;
-// 	toCreate: Array<Trecord>;
-// }
 
 export interface RecordGroupDiff<Trecord extends BaseRecord> {
 	type: 'creation' | 'update' | 'deletion';

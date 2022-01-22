@@ -58,6 +58,11 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
       new Set(existing.map(x => x.key)),
       new Set(desired.map(x => x.key)));
 
+    if (intersectingKeys.size == existing.length && existing.length == desired.length) {
+      // No changes! Right??
+      continue;
+    }
+
     changes.push({
       type: 'update',
       existing: existing.map(x => x.record),

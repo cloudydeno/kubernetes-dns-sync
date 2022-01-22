@@ -14,51 +14,46 @@ const aRecord = (target: string): BaseRecord => ({ dns: {
   target,
 } });
 
+const keyMakers = {
+  ComparisionKey: (x: BaseRecord) => JSON.stringify(getPlainRecordKey(x.dns)),
+  GroupingKey: (x: BaseRecord) => JSON.stringify([x.dns.fqdn, x.dns.type]),
+};
+
 Deno.test("first-time diff (happy path)", () => {
   const diff = buildDiff({
     Zone: exampleZone,
     Existing: [],
     Desired: [aRecord("1.1.1.1")],
-  }, {
-    ComparisionKey: x => JSON.stringify(getPlainRecordKey(x.dns)),
-    GroupingKey: x => JSON.stringify([x.dns.fqdn, x.dns.type]),
-  });
+  }, keyMakers);
 
   assertEquals(diff.length, 1);
   assertObjectMatch(diff[0], {
     type: 'creation',
-  })
-  // assertEquals(diff.toCreate.length, 1);
-  // // assertEquals(changes.Update.length, 0);
-  // assertEquals(diff.toDelete.length, 0);
-
-  // assertObjectMatch(diff.toCreate[0], { ...aRecord('1.1.1.1') });
+    toCreate: [aRecord("1.1.1.1")],
+  });
 });
 
-// Deno.test("no-change diff", () => {
-//   const diff = buildDiff({
-//     Zone: exampleZone,
-//     Existing: [aRecord("1.1.1.1")],
-//     Desired: [aRecord("1.1.1.1")],
-//   }, x => JSON.stringify(getPlainRecordKey(x.dns)));
+Deno.test("no-change diff", () => {
+  const diff = buildDiff({
+    Zone: exampleZone,
+    Existing: [aRecord("1.1.1.1")],
+    Desired: [aRecord("1.1.1.1")],
+  }, keyMakers);
 
-//   assertEquals(diff.toCreate.length, 0);
-//   // assertEquals(diff.toUpdate.length, 0);
-//   assertEquals(diff.toDelete.length, 0);
-// });
+  assertEquals(diff.length, 0);
+});
 
-// Deno.test("diff with record updates", () => {
-//   const diff = buildDiff({
-//     Zone: exampleZone,
-//     Existing: [aRecord("1.1.1.1")],
-//     Desired: [aRecord("2.2.2.2"), aRecord("3.3.3.3")],
-//   }, x => JSON.stringify(getPlainRecordKey(x.dns)));
+Deno.test("diff with record updates", () => {
+  const diff = buildDiff({
+    Zone: exampleZone,
+    Existing: [aRecord("1.1.1.1")],
+    Desired: [aRecord("2.2.2.2"), aRecord("3.3.3.3")],
+  }, keyMakers);
 
-//   assertEquals(diff.toCreate.length, 2);
-//   // assertEquals(diff.Update.length, 1);
-//   assertEquals(diff.toDelete.length, 1);
-
-//   assertObjectMatch(diff.toDelete[0], { ...aRecord('1.1.1.1') });
-//   assertObjectMatch(diff.toCreate[0], { ...aRecord('2.2.2.2') });
-//   assertObjectMatch(diff.toCreate[1], { ...aRecord('3.3.3.3') });
-// });
+  assertEquals(diff.length, 1);
+  assertObjectMatch(diff[0], {
+    type: 'update',
+    toDelete: [aRecord('1.1.1.1')],
+    toCreate: [aRecord("2.2.2.2"), aRecord("3.3.3.3")],
+  });
+});
