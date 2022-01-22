@@ -1,3 +1,5 @@
+#!/usr/bin/env -S POWERDNS_API_KEY=hello-world deno test --allow-env --allow-net=localhost:7070
+
 import { assertEquals, assertObjectMatch } from "https://deno.land/std@0.105.0/testing/asserts.ts";
 import { applyToProvider } from "../../common/test-utils.ts";
 import { NoopRegistry } from "../../registries/noop.ts";
