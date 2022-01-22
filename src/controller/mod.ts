@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-env --allow-read --allow-net --unstable --no-check
+#!/usr/bin/env -S deno run --allow-env --allow-read --allow-run=kubectl --allow-net --unstable
 
 import {
   TOML,
