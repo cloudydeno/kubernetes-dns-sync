@@ -6,18 +6,12 @@ import {
   replaceGlobalFetch,
 } from '../deps.ts';
 
-import { isControllerConfig } from "../common/mod.ts";
-import * as configure from "./configure.ts";
+import { isControllerConfig } from "../common/config.ts";
+import { configureSource } from "../sources/_configure.ts";
+import { configureProvider } from "../providers/_configure.ts";
+import { configureRegistry } from "../registries/_configure.ts";
+
 import { createTickStream } from "./ticks.ts";
-
-const config = TOML.parse(await Deno.readTextFile('config.toml'));
-if (!isControllerConfig(config)) throw new Error(`config.toml was invalid`);
-console.log('Parsed configuration:', JSON.stringify(config));
-
-const sources = config.source.map(configure.source);
-const providers = config.provider.map(configure.provider);
-const registry = [config.registry].map(configure.registry)[0];
-
 import {
   p3, p2, p1, p0,
   printTick,
@@ -26,6 +20,14 @@ import {
   printChanges,
   confirmBeforeApplyingChanges,
 } from "./output.ts";
+
+const config = TOML.parse(await Deno.readTextFile('config.toml'));
+if (!isControllerConfig(config)) throw new Error(`config.toml was invalid`);
+console.log('Parsed configuration:', JSON.stringify(config));
+
+const sources = await Promise.all(config.source.map(configureSource));
+const providers = config.provider.map(configureProvider);
+const registry = [config.registry].map(configureRegistry)[0];
 
 if (Deno.args.includes('--serve-metrics')) {
   replaceGlobalFetch();

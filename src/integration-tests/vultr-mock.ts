@@ -1,9 +1,10 @@
-import { RegistryConfig, VultrProviderConfig } from "../common/config.ts";
-import { SourceRecord } from "../common/contract.ts";
+import type { RegistryConfig, VultrProviderConfig } from "../common/config.ts";
+import type { SourceRecord } from "../common/contract.ts";
+
 import { VultrApiMock } from "../providers/vultr/mock.ts";
 import { VultrProvider } from "../providers/vultr/mod.ts";
+import { configureRegistry } from "../registries/_configure.ts";
 import { applyToProvider } from "./apply.ts";
-import * as configure from "../controller/configure.ts";
 
 export function mockedVultrTest(opts: {
   registry: RegistryConfig,
@@ -13,7 +14,7 @@ export function mockedVultrTest(opts: {
   sourceRecords: Array<SourceRecord>,
 }) {
 
-  const registry = configure.registry(opts.registry);
+  const registry = configureRegistry(opts.registry);
   const apiMock = opts.vultr ?? new VultrApiMock();
   const provider = new VultrProvider({
     type: 'vultr',

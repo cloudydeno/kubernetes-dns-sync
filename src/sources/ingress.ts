@@ -1,5 +1,10 @@
-import { IngressSourceConfig, DnsSource, SourceRecord, WatchLister, splitIntoV4andV6, PlainRecordHostname } from "../common/mod.ts";
 import { KubernetesClient, NetworkingV1Api } from '../deps.ts';
+
+import type { IngressSourceConfig } from "../common/config.ts";
+import type { DnsSource, SourceRecord, PlainRecordHostname } from "../common/contract.ts";
+import { WatchLister } from '../common/watch-lister.ts';
+
+import { splitIntoV4andV6 } from "../dns-logic/endpoints.ts";
 
 export class IngressSource implements DnsSource {
 
@@ -13,19 +18,20 @@ export class IngressSource implements DnsSource {
 
   watchLister = new WatchLister('Ingress',
     opts => this.networkingApi.getIngressListForAllNamespaces({ ...opts }),
-    opts => this.networkingApi.watchIngressListForAllNamespaces({ ...opts }));
+    opts => this.networkingApi.watchIngressListForAllNamespaces({ ...opts }),
+    ing => [ing.metadata?.annotations, ing.spec?.rules, ing.status?.loadBalancer?.ingress]);
 
   async ListRecords() {
     const endpoints = new Array<SourceRecord>();
 
-    for await (const node of this.watchLister.getFreshList(this.config.annotation_filter)) {
-      if (!node.metadata || !node.spec?.rules || !node.status?.loadBalancer?.ingress) continue;
+    for await (const ingress of this.watchLister.getFreshList(this.config.annotation_filter)) {
+      if (!ingress.metadata || !ingress.spec?.rules || !ingress.status?.loadBalancer?.ingress) continue;
 
-      for (const rule of node.spec.rules) {
+      for (const rule of ingress.spec.rules) {
         if (!rule.host) continue;
-        const hostnames = node.status.loadBalancer.ingress
+        const hostnames = ingress.status.loadBalancer.ingress
           .flatMap(x => x.hostname ? [x.hostname] : []);
-        const addresses = node.status.loadBalancer.ingress
+        const addresses = ingress.status.loadBalancer.ingress
           .flatMap(x => x.ip ? [x.ip] : []);
 
         const records = hostnames.length > 0
@@ -39,8 +45,8 @@ export class IngressSource implements DnsSource {
         if (!records.length) continue;
         for (const record of records) {
           endpoints.push({
-            annotations: node.metadata.annotations ?? {},
-            resourceKey: `ingress/${node.metadata.namespace}/${node.metadata.name}`,
+            annotations: ingress.metadata.annotations ?? {},
+            resourceKey: `ingress/${ingress.metadata.namespace}/${ingress.metadata.name}`,
             dns: {
               fqdn: rule.host.replace(/\.$/, ''),
               ...record,

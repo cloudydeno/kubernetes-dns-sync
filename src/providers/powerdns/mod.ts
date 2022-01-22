@@ -1,10 +1,12 @@
-import { ttlFromAnnotations } from "../../common/annotations.ts";
-import {
-  PowerDnsProviderConfig,
-  DnsProvider,
-  Zone, BaseRecord, PlainRecordData, PlainRecord, ZoneState, PlainRecordMX, getPlainRecordKey, SourceRecord, AllSupportedRecords,
-} from "../../common/mod.ts";
-import { transformFromRrdata, transformToRrdata } from "../../common/rrdata.ts";
+import type { PowerDnsProviderConfig } from "../../common/config.ts";
+import type {
+  DnsProvider, BaseRecord, Zone, SourceRecord, ZoneState, PlainRecordMX,
+} from "../../common/contract.ts";
+
+import { ttlFromAnnotations } from "../../dns-logic/annotations.ts";
+import { AllSupportedRecords, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
+import { transformFromRrdata, transformToRrdata } from "../../dns-logic/rrdata.ts";
+
 import { DnsRecordSet, PowerDnsApi } from "./api.ts";
 
 // TODO: SRV and MX do not strictly follow rrdata; priority has its own slot

@@ -1,14 +1,9 @@
-import { buildDiff } from "../common/diff.ts";
-import {
-  DnsProvider,
-  DnsRegistry,
-  SourceRecord,
-  BaseRecord,
-  ZoneState,
-  DnsSource,
-} from "../common/mod.ts";
-import { transformToRrdata } from "../common/rrdata.ts";
-// import { Planner } from "./planner.ts";
+import type {
+  DnsSource, BaseRecord, DnsRegistry, DnsProvider, SourceRecord, ZoneState,
+} from "../common/contract.ts";
+
+import { buildDiff } from "../dns-logic/diff.ts";
+import { transformToRrdata } from "../dns-logic/rrdata.ts";
 
 export const p3 = '   ';
 export const p2 = '-->';

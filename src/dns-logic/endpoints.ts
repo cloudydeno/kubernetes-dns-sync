@@ -1,4 +1,15 @@
-import { PlainRecord, PlainRecordAddress } from "./contract.ts";
+import type { PlainRecord, PlainRecordAddress } from "../common/contract.ts";
+
+export const AllSupportedRecords: Record<PlainRecord['type'], true> = {
+  'A': true,
+  'AAAA': true,
+  'NS': true,
+  'CNAME': true,
+  'TXT': true,
+  'MX': true,
+	'SOA': true,
+	'SRV': true,
+};
 
 export function splitIntoV4andV6(targets: string[]): PlainRecordAddress[] {
   const endpoints = new Array<PlainRecordAddress>();

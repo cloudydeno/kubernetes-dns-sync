@@ -1,11 +1,10 @@
-import { PlainRecord, PlainRecordData } from "./contract.ts";
-type supportedRecords = PlainRecord['type'];
+import type { PlainRecord, PlainRecordData } from "../common/contract.ts";
 
 // This file is useful for integrating providers that
 // expose the raw 'rrdata' strings in their API,
 // as opposed to having their own JSON structures for e.g. MX priority.
 
-export function transformFromRrdata(rType: supportedRecords, rrdata: string): PlainRecordData {
+export function transformFromRrdata(rType: PlainRecord['type'], rrdata: string): PlainRecordData {
   switch (rType) {
     case 'A':
     case 'AAAA':

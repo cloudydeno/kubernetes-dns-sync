@@ -1,9 +1,11 @@
-import { ttlFromAnnotations } from "../../common/annotations.ts";
-import {
-  VultrProviderConfig,
-  DnsProvider,
-  Zone, SourceRecord, BaseRecord, getPlainRecordKey, PlainRecord, ZoneState,
-} from "../../common/mod.ts";
+import type { VultrProviderConfig } from "../../common/config.ts";
+import type {
+  BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState, PlainRecord,
+} from "../../common/contract.ts";
+
+import { ttlFromAnnotations } from "../../dns-logic/annotations.ts";
+import { getPlainRecordKey } from "../../dns-logic/endpoints.ts";
+
 import { DnsRecord, DnsRecordData, VultrApi, VultrApiSurface } from "./api.ts";
 
 export type VultrRecord = BaseRecord & {

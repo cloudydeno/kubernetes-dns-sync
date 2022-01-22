@@ -1,6 +1,10 @@
 import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
-import { BaseRecord, DnsProvider, DnsRegistry, SourceRecord, ZoneState } from "../common/contract.ts";
-import { buildDiff } from "../common/diff.ts";
+
+import type {
+  BaseRecord, DnsProvider, DnsRegistry, SourceRecord, ZoneState,
+} from "../common/contract.ts";
+
+import { buildDiff } from "../dns-logic/diff.ts";
 
 export async function applyToProvider<
   Tsource extends BaseRecord,

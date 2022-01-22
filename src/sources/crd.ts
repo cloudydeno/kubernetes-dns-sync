@@ -1,5 +1,8 @@
-import { CrdSourceConfig, DnsSource, PlainRecordData, SourceRecord, WatchLister } from "../common/mod.ts";
 import { ExternaldnsV1alpha1Api, KubernetesClient } from '../deps.ts';
+
+import type { CrdSourceConfig } from "../common/config.ts";
+import type { DnsSource, SourceRecord, PlainRecordData } from "../common/contract.ts";
+import { WatchLister } from "../common/watch-lister.ts";
 
 export class CrdSource implements DnsSource {
 

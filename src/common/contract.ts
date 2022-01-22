@@ -101,17 +101,6 @@ export type PlainRecordSOA = {
 	minimum: number;
 }
 
-export const AllSupportedRecords: Record<PlainRecordData['type'], true> = {
-  'A': true,
-  'AAAA': true,
-  'NS': true,
-  'CNAME': true,
-  'TXT': true,
-  'MX': true,
-	'SOA': true,
-	'SRV': true,
-};
-
 export interface ZoneState<Trecord extends BaseRecord> {
 	Zone: Zone;
 	Existing: Array<Trecord>;

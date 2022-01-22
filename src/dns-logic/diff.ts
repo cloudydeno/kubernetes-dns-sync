@@ -1,5 +1,8 @@
 import { SetUtil } from "../deps.ts";
-import { BaseRecord, ZoneState, DnsProvider, RecordGroupDiff } from "./contract.ts";
+
+import type {
+  BaseRecord, ZoneState, DnsProvider, RecordGroupDiff,
+} from "../common/contract.ts";
 
 // TODO: the grouping/comparision keys should probably be enriched once directly onto the records
 export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>, rules: Pick<DnsProvider<Trecord>, 'GroupingKey' | 'ComparisionKey'>): Array<RecordGroupDiff<Trecord>> {

@@ -1,14 +1,13 @@
-import { ttlFromAnnotations } from "../../common/annotations.ts";
-import {
-  GoogleProviderConfig,
-  DnsProvider,
-  Zone, BaseRecord, getPlainRecordKey, SourceRecord, ZoneState, PlainRecord,
-} from "../../common/mod.ts";
-import { transformFromRrdata, transformToRrdata } from "../../common/rrdata.ts";
-import { GoogleCloudDnsApi,
-  Schema$Change,
-  Schema$ResourceRecordSet,
-} from "./api.ts";
+import type { GoogleProviderConfig } from "../../common/config.ts";
+import type {
+  BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState,
+} from "../../common/contract.ts";
+
+import { ttlFromAnnotations } from "../../dns-logic/annotations.ts";
+import { getPlainRecordKey } from "../../dns-logic/endpoints.ts";
+import { transformFromRrdata, transformToRrdata } from "../../dns-logic/rrdata.ts";
+
+import { GoogleCloudDnsApi, Schema$Change, Schema$ResourceRecordSet } from "./api.ts";
 
 interface GoogleRecord extends BaseRecord {
   recordSet?: Schema$ResourceRecordSet;
@@ -22,6 +21,7 @@ const supportedRecords = {
   'TXT': true,
   'MX': true,
 };
+// TODO: AllSupportedRecords instead (add SRV and SOA)
 
 export class GoogleProvider implements DnsProvider<GoogleRecord> {
   constructor(
