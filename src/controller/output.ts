@@ -5,6 +5,7 @@ import {
   SourceRecord,
   BaseRecord,
   ZoneState,
+  DnsSource,
 } from "../common/mod.ts";
 import { transformToRrdata } from "../common/rrdata.ts";
 // import { Planner } from "./planner.ts";
@@ -22,18 +23,18 @@ export function printTick(tickVia: string | undefined) {
   console.log('---', new Date().toISOString(), tickReason);
 }
 
-export async function loadSourceEndpoints(sources: Array<{
-  ListRecords: () => Promise<Array<SourceRecord>>;
-  config: { type: string },
-}>) {
+export async function loadSourceEndpoints(sources: Array<DnsSource>) {
   console.log(p2, 'Loading desired records from', sources.length, 'sources...');
+  const resourceKeys = new Map<DnsSource, Set<string>>();
   const sourceRecords = await Promise.all(sources.map(async source => {
     const endpoints = await source.ListRecords();
     console.log(p3, 'Discovered', endpoints.length, 'desired records from', source.config.type);
+    // TODO: also include zone name here somehow
+    resourceKeys.set(source, new Set(endpoints.map(x => x.resourceKey)));
     return endpoints;
   })).then(x => x.flat());
   console.log(p2, 'Discovered', sourceRecords.length, 'desired records overall');
-  return sourceRecords;
+  return { sourceRecords, resourceKeys };
 }
 
 export async function* discoverProviderChanges<T extends BaseRecord>(

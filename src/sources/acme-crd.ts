@@ -72,6 +72,7 @@ export class AcmeCrdSource implements DnsSource {
     const finalizer = this.#finalizers.get(resourceKey);
     if (finalizer) {
       this.#finalizers.delete(resourceKey);
+      console.debug('   ', 'Observing', resourceKey);
       await finalizer();
     }
   }

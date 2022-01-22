@@ -39,8 +39,9 @@ for await (const tickSource of createTickStream(config, sources)) {
   // Log why we're here
   printTick(tickSource?.config.type);
 
-  const sourceRecords = await loadSourceEndpoints(sources);
+  const { sourceRecords, resourceKeys } = await loadSourceEndpoints(sources);
 
+  const appliedZoneFqdns = new Array<string>();
   for (const provider of providers) {
     const providerId = provider.config.type;
     // const providerCtx = await provider.NewContext();
@@ -50,6 +51,7 @@ for await (const tickSource of createTickStream(config, sources)) {
     for await (const diff of discoverProviderChanges(registry, providerId, provider, sourceRecords)) {
       if (diff.Diff!.length === 0) {
         console.log(p2, 'Provider', providerId, 'has no necesary changes for', diff.Zone.fqdn);
+        appliedZoneFqdns.push(diff.Zone.fqdn);
         continue;
       }
 
@@ -65,13 +67,23 @@ for await (const tickSource of createTickStream(config, sources)) {
 
       console.log(p1, 'Submitting', toCreate, 'to create,', toUpdate, 'to update,', toDelete, 'to delete', 'to', providerId, 'for', diff.Zone.fqdn, '...');
       await provider.ApplyChanges(diff);
+
       console.log('');
+      appliedZoneFqdns.push(diff.Zone.fqdn);
     }
 
     if (skipped) {
       console.log(p2, 'Provider', providerId, 'is done syncing. However, not all desired actions were taken.');
     } else {
       console.log(p2, 'Provider', providerId, 'is now up to date.');
+    }
+  }
+
+  for (const [source, keys] of resourceKeys) {
+    if (!source.ObserveResource) continue;
+    for (const key of keys) {
+      // TODO: need to only do this for records under appliedZoneFqdns
+      await source.ObserveResource(key);
     }
   }
 
