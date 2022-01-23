@@ -35,6 +35,7 @@ All sources can be configured with their own `annotation_filter`.
 * [Cloudflare](https://www.cloudflare.com/dns/)
 * [Vultr: "The Infrastructure Cloud"](https://www.vultr.com/)
 * [Google Cloud DNS](https://cloud.google.com/dns)
+* [PowerDNS](https://github.com/PowerDNS/pdns)
 
 I'd be open to adding and/or merging a couple others - in particular
 AWS Route53,
@@ -48,6 +49,8 @@ etc. but for my needs having one or two providers is plenty.
 * `--yes`: commit changes to DNS provider APIs without asking
 * `--once`: one run only, exits when done
 * `--serve-metrics`: start an OpenMetrics/Prometheus server on port 9090
+* `--debug`: enable extra logging
+* `--log-as-json`: structured logging as JSON log lines
 
 The default behavior
 (if neither `--dry-run` nor `--yes` are supplied)
@@ -69,14 +72,32 @@ and set it as the `CLOUDFLARE_TOKEN` environment variable.
 ```toml
 [[provider]]
 type = "cloudflare"
-proxied_by_default = true # Have traffic go through Cloudflare's CDN by default
-# allow_proxied_wildcards = false # 'true' here requires Cloudflare Enterprise
+
+### Have traffic go through Cloudflare's CDN by default?
+### This can also be set per-record with an Kubernetes annotation, see below
+proxied_by_default = true
+### If you want to have proxied *wildcards* and you pay for Cloudflare Enterprise:
+# allow_proxied_wildcards = false
+
 ### These let you give specific IDs instead of finding what you can access
 # account_id = ["zjh..etc..aio"]
 # zone_id_filter = ["058..etc..90q"]
 ### This filters the list of zones that was found
 # domain_filter = ["danopia.net"]
 ```
+
+To control proxy status (orange vs. gray cloud) on a per-record basis, use this annotation:
+
+```yaml
+metadata:
+  annotations:
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: 'true'
+```
+
+If the annotation is present, proxying will be configured
+based on the annotation value being equal to the string `"true"`.
+If the annotation is not present then the default value will be used from the config.
+If the configuration doesn't have a value then the default is `false`.
 
 ### `vultr`
 Generate an API Token
@@ -85,8 +106,12 @@ and set it as the `VULTR_API_KEY` environment variable.
 ```toml
 [[provider]]
 type = "vultr"
+
+### This filters the list of zones that was found
 # domain_filter = ["danopia.net"]
 ```
+
+Vultr supports every dns-sync record type except `SOA`.
 
 ### `google`
 For authentication, currently only the `GOOGLE_APPLICATION_CREDENTIALS` envvar is supported.
@@ -97,13 +122,18 @@ If you want better auth, please ask :)
 ```toml
 [[provider]]
 type = "google"
+
+### By default, the project is read from your service account's JSON data.
 # project_id = "my-project-id"
+### These filter which zones to pay attention to, by either DNS name or user-specified identifer
 # domain_filter = ["danopia.net"]
 # zone_filter = ["myzone-chosen-id"]
 ```
 
 ### `powerdns`
-This provider is not ready for use, but it does exist, so you're welcome to test/vet it.
+[PowerDNS](https://github.com/PowerDNS/pdns) is an open source authoritative DNS server.
+So, unlike the other providers, you can run your own `powerdns` program
+alongside `kubernetes-dns-sync` for local development purposes.
 
 Set the `POWERDNS_API_KEY` envvar to authenticate.
 
