@@ -3,6 +3,7 @@ import { ExternaldnsV1alpha1Api, KubernetesClient, log } from '../deps.ts';
 import type { CrdSourceConfig } from "../config.ts";
 import type { DnsSource, SourceRecord, PlainRecordData } from "../types.ts";
 import { WatchLister } from "./lib/watch-lister.ts";
+import { transformFromRrdata } from "../dns-logic/rrdata.ts";
 
 export class CrdSource implements DnsSource {
 
@@ -42,31 +43,15 @@ export class CrdSource implements DnsSource {
         }
 
         const records = new Array<PlainRecordData>();
-        const type = rule.recordType;
-        switch (type) {
 
-          case 'A':
-          case 'AAAA':
-            for (const target of rule.targets) {
-              records.push({ type, target });
-            }
-            break;
-
-          case 'CNAME':
-          case 'NS':
-            for (const raw of rule.targets) {
-              const target = raw.replace(/\.$/, '');
-              records.push({ type, target });
-            }
-            break;
-
-          case 'TXT':
-            for (const content of rule.targets) {
-              if (content.startsWith('"')) throw new Error(
-                `Looks like ${rule.dnsName} TXT CRD has extra-quoted values`);
-              records.push({ type, content });
-            }
-            break;
+        for (const target of rule.targets) {
+          if (rule.recordType === 'TXT' && !target.startsWith('"')) {
+            // If we get an unquoted TXT we treat it as a decoded value instead of rrdata
+            records.push({ type: rule.recordType, content: target });
+          } else {
+            // Treat most things as rrdata, should do the trick
+            records.push(transformFromRrdata(rule.recordType as PlainRecordData['type'], target));
+          }
         }
 
         for (const record of records) {
