@@ -51,7 +51,7 @@ for await (const tickSource of createTickStream(config, sources)) {
 
     let skipped = false;
     for await (const diff of discoverProviderChanges(registry, providerId, provider, sourceRecords)) {
-      if (diff.Diff!.length === 0) {
+      if (diff.Diff?.length === 0) {
         console.log(p2, 'Provider', providerId, 'has no necesary changes for', diff.Zone.fqdn);
         appliedZoneFqdns.push(diff.Zone.fqdn);
         continue;

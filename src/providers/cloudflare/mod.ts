@@ -6,7 +6,7 @@ import { CloudflareApi, CloudflareApiSurface, DnsRecord, DnsRecordData } from ".
 
 export type CloudflareRecord = BaseRecord & {
   recordId?: string;
-  proxied: boolean;
+  proxied?: boolean;
 }
 
 type UnsupportedRecords = Exclude<PlainRecord['type'], DnsRecordData['type']>;
@@ -56,7 +56,10 @@ export class CloudflareProvider implements DnsProvider<CloudflareRecord> {
     });
     if (!enriched) return enriched;
 
-    let proxied = record.annotations['external-dns.alpha.kubernetes.io/cloudflare-proxied'] == 'true' ?? this.config.proxied_by_default ?? false;
+    const annotationVal = record.annotations['external-dns.alpha.kubernetes.io/cloudflare-proxied'];
+    let proxied = (annotationVal ? annotationVal == 'true' : null)
+        ?? this.config.proxied_by_default
+        ?? false;
 
     const unproxyable = new Set(['LOC', 'MX', 'NS', 'SPF', 'TXT', 'SRV']);
     if (unproxyable.has(record.dns.type)) proxied = false;
@@ -83,12 +86,12 @@ export class CloudflareProvider implements DnsProvider<CloudflareRecord> {
       }
       for (const update of diff.toUpdate) {
         if (!update.existing.recordId) throw new Error(`BUG: updating ID-less Cloudflare record`);
-        const record = transformForApi(state.Zone.fqdn, update.desired.dns);
+        const record = transformForApi(state.Zone.fqdn, update.desired.dns, update.desired.proxied ?? false);
         await this.api.updateRecord(state.Zone.zoneId, update.existing.recordId, record);
       }
       for (const creation of diff.toCreate) {
         if (creation.recordId) throw new Error(`BUG: creating ID-having Cloudflare record`);
-        const record = transformForApi(state.Zone.fqdn, creation.dns);
+        const record = transformForApi(state.Zone.fqdn, creation.dns, creation.proxied ?? false);
         await this.api.createRecord(state.Zone.zoneId, record);
       }
     }
@@ -139,7 +142,7 @@ function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | fa
   return false;
 }
 
-function transformForApi(zoneFqdn: string, dns: PlainRecord): DnsRecordData {
+function transformForApi(zoneFqdn: string, dns: PlainRecord, proxied: boolean): DnsRecordData {
   if (!dns.fqdn.endsWith(zoneFqdn)) throw new Error(
     `BUG: Cloudflare given wrong zone ${zoneFqdn} for record ${dns.fqdn}`);
 
@@ -151,6 +154,7 @@ function transformForApi(zoneFqdn: string, dns: PlainRecord): DnsRecordData {
       return {
         name: dns.fqdn,
         type: dns.type,
+        proxied,
         content: dns.target,
         ttl: dns.ttl ?? 1,
       };
@@ -158,6 +162,7 @@ function transformForApi(zoneFqdn: string, dns: PlainRecord): DnsRecordData {
       return {
         name: dns.fqdn,
         type: dns.type,
+        proxied,
         content: `"${dns.content}"`,
         ttl: dns.ttl ?? 1,
       };
@@ -165,6 +170,7 @@ function transformForApi(zoneFqdn: string, dns: PlainRecord): DnsRecordData {
       return {
         name: dns.fqdn,
         type: dns.type,
+        proxied,
         content: dns.target,
         ttl: dns.ttl ?? 1,
         priority: dns.priority,
@@ -173,6 +179,7 @@ function transformForApi(zoneFqdn: string, dns: PlainRecord): DnsRecordData {
       return {
         name: dns.fqdn,
         type: dns.type,
+        proxied,
         content: `${dns.weight} ${dns.port} ${dns.target}`,
         ttl: dns.ttl ?? 1,
         priority: dns.priority,

@@ -74,7 +74,7 @@ Deno.test('cloudflare partial record update', async () => {
 
   const newEndpoints = new Array<SourceRecord>({
     annotations: {
-// 'external-dns.alpha.kubernetes.io/cloudflare-proxied': 'true',
+      // 'external-dns.alpha.kubernetes.io/cloudflare-proxied': 'true',
     },
     resourceKey: 'test',
     dns: {
