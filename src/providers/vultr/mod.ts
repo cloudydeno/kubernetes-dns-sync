@@ -4,6 +4,7 @@ import type {
 } from "../../types.ts";
 
 import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
+import { readTxtValue } from "../../dns-logic/rrdata.ts";
 
 import { DnsRecord, DnsRecordData, VultrApi, VultrApiSurface } from "./api.ts";
 
@@ -12,19 +13,11 @@ export type VultrRecord = BaseRecord & {
   recordId?: string;
 }
 
-const supportedRecords = {
-  'A': true,
-  'AAAA': true,
-  'NS': true,
-  'CNAME': true,
-  'TXT': true,
-  'MX': true,
-  'SRV': true,
-};
-type UnsupportedRecords = Exclude<PlainRecord['type'], keyof typeof supportedRecords>;
+type SupportedRecords = DnsRecordData['type'] & PlainRecord['type'];
+type UnsupportedRecords = Exclude<PlainRecord['type'], DnsRecordData['type']>;
 const unsupportedRecords: Record<UnsupportedRecords, true> = {
   SOA: true,
-}
+};
 
 export class VultrProvider implements DnsProvider<VultrRecord> {
   constructor(
@@ -98,7 +91,7 @@ export class VultrProvider implements DnsProvider<VultrRecord> {
 
 function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | false {
   // this is a lie to get types to help us out more:
-  const type = record.type as keyof typeof supportedRecords;
+  const type = record.type as SupportedRecords;
 
   const ttl = record.ttl >= 0 ? record.ttl : undefined;
   const fqdn = record.name ? `${record.name}.${zoneFqdn}` : zoneFqdn;
@@ -115,7 +108,7 @@ function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | fa
     case 'TXT':
       return {
         type, ttl, fqdn,
-        content: record.data.slice(1, -1), // TODO: proper txt reading
+        content: readTxtValue(record.data),
       };
     case 'MX':
       return {

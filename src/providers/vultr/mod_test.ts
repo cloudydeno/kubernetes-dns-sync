@@ -1,9 +1,8 @@
-import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
+import { applyToProvider } from "../../integration-tests/apply.ts";
+import { NoopRegistry } from "../../registries/noop.ts";
 
-import { SourceRecord, ZoneState } from "../../types.ts";
-import { buildDiff } from "../../dns-logic/diff.ts";
 import { VultrApiMock } from "./mock.ts";
-import { VultrProvider, VultrRecord } from "./mod.ts";
+import { VultrProvider } from "./mod.ts";
 
 Deno.test('vultr record replacement', async () => {
 
@@ -22,7 +21,7 @@ Deno.test('vultr record replacement', async () => {
     data: { name: 'www', type: 'A', data: '2.2.2.2' },
   }]);
 
-  const newEndpoints = new Array<SourceRecord>({
+  await applyToProvider(provider, new NoopRegistry({type: 'noop'}), [{
     annotations: {},
     resourceKey: 'test',
     dns: {
@@ -30,23 +29,7 @@ Deno.test('vultr record replacement', async () => {
       type: 'A',
       target: '2.2.2.2',
     },
-  }).map(x => provider.EnrichSourceRecord(x))
-    .flatMap(x => x ? [x] : []);
-
-  const zones = await provider.ListZones();
-  assertEquals(zones.length, 1);
-
-  const foundEndpoints = await provider.ListRecords(zones[0]);
-  assertEquals(foundEndpoints.length, 1);
-
-  const state: ZoneState<VultrRecord> = {
-    Zone: zones[0],
-    Existing: foundEndpoints,
-    Desired: newEndpoints,
-  };
-  state.Diff = buildDiff(state, provider);
-
-  await provider.ApplyChanges(state);
+  }]);
 
   apiMock.verifyCompletion();
 });
@@ -71,7 +54,7 @@ Deno.test('vultr partial record update', async () => {
     data: { name: 'www', type: 'A', data: '3.3.3.3' },
   }]);
 
-  const newEndpoints = new Array<SourceRecord>({
+  await applyToProvider(provider, new NoopRegistry({type: 'noop'}), [{
     annotations: {},
     resourceKey: 'test',
     dns: {
@@ -87,23 +70,7 @@ Deno.test('vultr partial record update', async () => {
       type: 'A',
       target: '3.3.3.3',
     },
-  }).map(x => provider.EnrichSourceRecord(x))
-    .flatMap(x => x ? [x] : []);
-
-  const zones = await provider.ListZones();
-  assertEquals(zones.length, 1);
-
-  const foundEndpoints = await provider.ListRecords(zones[0]);
-  assertEquals(foundEndpoints.length, 2);
-
-  const state: ZoneState<VultrRecord> = {
-    Zone: zones[0],
-    Existing: foundEndpoints,
-    Desired: newEndpoints,
-  };
-  state.Diff = buildDiff(state, provider);
-
-  await provider.ApplyChanges(state);
+  }]);
 
   apiMock.verifyCompletion();
 });
