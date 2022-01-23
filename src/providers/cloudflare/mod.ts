@@ -9,6 +9,8 @@ import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints
 import { readTxtValue } from "../../dns-logic/rrdata.ts";
 import { CloudflareApi, CloudflareApiSurface, DnsRecord, DnsRecordData } from "./api.ts";
 
+export const ProxiedAnnotation = `external-dns.alpha.kubernetes.io/cloudflare-proxied`;
+
 export type CloudflareRecord = BaseRecord & {
   recordId?: string;
   proxied?: boolean;
@@ -72,7 +74,7 @@ export class CloudflareProvider implements DnsProvider<CloudflareRecord> {
     });
     if (!enriched) return enriched;
 
-    const annotationVal = record.annotations['external-dns.alpha.kubernetes.io/cloudflare-proxied'];
+    const annotationVal = record.annotations[ProxiedAnnotation];
     const proxyable = canBeProxied(enriched.dns, this.config);
     const proxied = proxyable &&
       ((annotationVal ? annotationVal == 'true' : null)
@@ -83,7 +85,7 @@ export class CloudflareProvider implements DnsProvider<CloudflareRecord> {
   }
 
   ComparisionKey(record: CloudflareRecord): string {
-    return JSON.stringify([record.proxied, ...getPlainRecordKey(record.dns)]);
+    return JSON.stringify([...getPlainRecordKey(record.dns), record.proxied]);
   }
   GroupingKey(record: CloudflareRecord): string {
     // only "type" is immutable in the API. we also include FQDN to reduce confusion
