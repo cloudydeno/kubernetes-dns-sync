@@ -4,14 +4,17 @@ dnsSync:
   applyChanges: false
   serveMetrics: true
 
+  logging:
+    debug: false
+    logAsJson: false
+    noColor: true
+
   envFrom: []
   # - secretRef:
   #     name: dns-sync-credentials
 
   extraVolumeMounts: []
   extraVolumes: []
-
-  noColor: true
 
   # more examples: https://github.com/cloudydeno/kubernetes-dns-sync/tree/main/examples
   config: |

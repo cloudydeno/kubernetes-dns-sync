@@ -12,7 +12,7 @@ Deno.test('PowerDNS integration test', async () => {
     api_endpoint: 'http://localhost:7070/api/',
     domain_filter: ['test-world.com'],
   });
-  await resetZone(provider, 'test-world.com');
+  await provider.api.recreateEntireZone('test-world.com');
 
   const registry = new NoopRegistry({type: 'noop'});
 
@@ -138,7 +138,7 @@ Deno.test('PowerDNS integration test: MX', async () => {
     api_endpoint: 'http://localhost:7070/api/',
     domain_filter: ['test-world.com'],
   });
-  await resetZone(provider, 'test-world.com');
+  await provider.api.recreateEntireZone('test-world.com');
 
   const registry = new NoopRegistry({type: 'noop'});
 
@@ -221,13 +221,3 @@ Deno.test('PowerDNS integration test: MX', async () => {
   }
 
 });
-
-async function resetZone(provider: PowerDnsProvider, zoneName: string) {
-  await provider.api._doHttp(`zones/${zoneName}.`, {
-    method: 'DELETE',
-  }).catch(() => console.log(`Test zone ${zoneName} did not exist yet, all good`));
-  await provider.api._doHttp(`zones`, {
-    method: 'POST',
-    body: JSON.stringify({name: `${zoneName}.`, kind: 'Native'}),
-  });
-}

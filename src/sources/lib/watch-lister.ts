@@ -1,4 +1,4 @@
-import { ObjectMeta, Reflector, Status, WatchEvent } from "../../deps.ts";
+import { log, ObjectMeta, Reflector, Status, WatchEvent } from "../../deps.ts";
 
 type ListOf<T> = { metadata: { resourceVersion?: string | null }; items: Array<T> };
 
@@ -17,7 +17,7 @@ export class WatchLister<T extends {metadata?: ObjectMeta | null }> extends Refl
 
   private async listFromUpstream() {
     const {items} = await this.lister({});
-    console.log('INFO: Reflector for', this.label, 'listed upstream');
+    log.debug(`WatchLister for ${this.label} listed upstream`);
     return items;
   }
 
@@ -49,10 +49,10 @@ export class WatchLister<T extends {metadata?: ObjectMeta | null }> extends Refl
       this.run(); // kinda just toss this away...
       this.isRunning = true;
     } else {
-      console.log(`WARN: Adding another event handler to existing WatchLister for ${this.label}`);
+      log.warning(`WARN: Adding another event handler to existing WatchLister for ${this.label}`);
     }
 
-    console.log(`Observing ${this.label}...`);
+    log.info(`Observing ${this.label}...`);
     let inSync = false;
     for await (const evt of this.observeAll()) {
       switch (evt.type) {
@@ -79,6 +79,6 @@ export class WatchLister<T extends {metadata?: ObjectMeta | null }> extends Refl
           break;
       }
     }
-    console.log(`Done observing ${this.label}`);
+    log.debug(`Done observing ${this.label}`);
   }
 }

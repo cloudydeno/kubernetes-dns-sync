@@ -1,7 +1,7 @@
-import { SetUtil } from "../deps.ts";
+import { log, SetUtil } from "../deps.ts";
 
-import { TxtRegistryConfig } from "../config.ts";
-import { DnsRegistry, ZoneState, BaseRecord, SourceRecord } from "../types.ts";
+import type { TxtRegistryConfig } from "../config.ts";
+import type { DnsRegistry, ZoneState, BaseRecord, SourceRecord } from "../types.ts";
 
 /** Manages record ownership in-band with regular TXT records */
 export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinput> {
@@ -74,7 +74,6 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
       let areWeAdopting = false;
       if (ourOwnership) {
         if (ourOwnership.targetTypes.size > 0) {
-          // console.log({t: ourOwnership.targetTypes, desiredTypes})
           if (SetUtil.isSuperset(ourOwnership.targetTypes, desiredTypes)) {
             // We are good!
             // Make sure we pay attention to everything we're supposedly managing:
@@ -96,7 +95,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
 
               if (ownership.isAdoptable) {
                 // TODO: any further safety checks on adoption?
-                console.error(`WARN: adopting FQDN ${fqdn} from`, ownership.labels['external-dns/owner']);
+                log.warning(`WARN: adopting FQDN ${fqdn} from ${ownership.labels['external-dns/owner']}`);
                 stateDesired.delete(ownership.record); // Delete the other ownership record
                 areWeAdopting = true;
                 break; // This ownership record does not need further consideration
@@ -108,12 +107,12 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
           } else {
             if (ownership.isAdoptable) {
               // TODO: any further safety checks on adoption?
-              console.error(`WARN: adopting FQDN ${fqdn} from`, ownership.labels['external-dns/owner']);
+              log.warning(`WARN: adopting FQDN ${fqdn} from ${ownership.labels['external-dns/owner']}`);
               stateDesired.delete(ownership.record); // Delete the other ownership record
               areWeAdopting = true;
 
             } else {
-              console.debug(`Found unscoped registration for FQDN ${fqdn} (made by external-dns?) which means we can't do anything there.`);
+              log.debug(`Found unscoped registration for FQDN ${fqdn} (made by external-dns?) which means we can't do anything there.`);
               allowedTypes.clear();
             }
           }
@@ -128,7 +127,6 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
         // throw new Error(`TODO: we are not registered for this FQDN yet`);
       }
 
-      // console.log({desiredTypes, allowedTypes})
       for (const type of allowedTypes) {
         managedByUs.add(JSON.stringify([fqdn, type]));
       }
@@ -145,7 +143,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
             resourceKeys.add(desiredRec.resourceKey);
           }
         } else {
-          console.error(`WARN: desired record ${desiredRec.dns.fqdn}/${desiredRec.dns.type} has overlap in the DNS zone or TXT registry and will be skipped`);
+          log.warning(`Skipping ${desiredRec.dns.fqdn}/${desiredRec.dns.type} due to TXT registry overlap`);
         }
       }
 
@@ -183,7 +181,6 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
       stateDesired.add(existing);
     }
 
-    // console.log('final desired:', stateDesired);
     // TODO: return some stats:
     // # of existing record targets from us
     // # of skipped records (not cleared to add)
