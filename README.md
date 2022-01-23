@@ -32,12 +32,12 @@ All sources can be configured with their own `annotation_filter`.
 
 ### Supported DNS providers
 
+* [Cloudflare](https://www.cloudflare.com/dns/)
 * [Vultr: "The Infrastructure Cloud"](https://www.vultr.com/)
 * [Google Cloud DNS](https://cloud.google.com/dns)
 
 I'd be open to adding and/or merging a couple others - in particular
 AWS Route53,
-Cloudflare,
 Namecheap,
 Gandi,
 etc. but for my needs having one or two providers is plenty.
@@ -53,6 +53,65 @@ The default behavior
 (if neither `--dry-run` nor `--yes` are supplied)
 is to print the planned changes and
 interactively ask the user before applying them.
+
+## Providers
+
+In general, providers require no extra configuration
+other than a token/credential via an environment variable.
+
+There's always at least one option available (`domain_filter`)
+for filtering which zones will be synced.
+
+### `cloudflare`
+Generate a Cloudflare API Token (the "edit DNS" sample is perfect)
+and set it as the `CLOUDFLARE_TOKEN` environment variable.
+
+```toml
+[[provider]]
+type = "cloudflare"
+# proxied_by_default = true
+### These let you give specific IDs instead of finding what you can access
+# account_id = ["zjh..etc..aio"]
+# zone_id_filter = ["058..etc..90q"]
+### This filters the list of zones that was found
+# domain_filter = ["danopia.net"]
+```
+
+### `vultr`
+Generate an API Token
+and set it as the `VULTR_API_KEY` environment variable.
+
+```toml
+[[provider]]
+type = "vultr"
+# domain_filter = ["danopia.net"]
+```
+
+### `google`
+For authentication, currently only the `GOOGLE_APPLICATION_CREDENTIALS` envvar is supported.
+It must contain a path to a JSON file containing a `"type":"service_account"` credential.
+The OAuth scopes `https://www.googleapis.com/auth/ndev.clouddns.{read,write}` will be used.
+If you want better auth, please ask :)
+
+```toml
+[[provider]]
+type = "google"
+# project_id = "my-project-id"
+# domain_filter = ["danopia.net"]
+# zone_filter = ["myzone-chosen-id"]
+```
+
+### `powerdns`
+This provider is not ready for use, but it does exist, so you're welcome to test/vet it.
+
+Set the `POWERDNS_API_KEY` envvar to authenticate.
+
+```toml
+type = "powerdns"
+# api_endpoint = "http://localhost:8081/api/" # default
+# server_id = "localhost" # default
+# domain_filter = ["danopia.net"]
+```
 
 ## Sources
 

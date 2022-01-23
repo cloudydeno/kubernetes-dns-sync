@@ -4,6 +4,7 @@ import type {
 } from "../../types.ts";
 
 import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
+import { readTxtValue } from "../../dns-logic/rrdata.ts";
 
 import { DnsRecord, DnsRecordData, VultrApi, VultrApiSurface } from "./api.ts";
 
@@ -115,7 +116,7 @@ function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | fa
     case 'TXT':
       return {
         type, ttl, fqdn,
-        content: record.data.slice(1, -1), // TODO: proper txt reading
+        content: readTxtValue(record.data),
       };
     case 'MX':
       return {
