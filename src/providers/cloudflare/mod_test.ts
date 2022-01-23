@@ -1,9 +1,8 @@
-import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
-import { buildDiff } from "../../dns-logic/diff.ts";
-import { SourceRecord, ZoneState } from "../../types.ts";
+import { applyToProvider } from "../../integration-tests/apply.ts";
+import { NoopRegistry } from "../../registries/noop.ts";
 
 import { CloudflareApiMock } from "./mock.ts";
-import { CloudflareProvider, CloudflareRecord } from "./mod.ts";
+import { CloudflareProvider } from "./mod.ts";
 
 Deno.test('cloudflare record update', async () => {
 
@@ -22,7 +21,7 @@ Deno.test('cloudflare record update', async () => {
     data: { name: 'www.example.com', type: 'A', content: '2.2.2.2', ttl: 1 },
   }]);
 
-  const newEndpoints = new Array<SourceRecord>({
+  await applyToProvider(provider, new NoopRegistry({type: 'noop'}), [{
     annotations: {},
     resourceKey: 'test',
     dns: {
@@ -30,23 +29,7 @@ Deno.test('cloudflare record update', async () => {
       type: 'A',
       target: '2.2.2.2',
     },
-  }).map(x => provider.EnrichSourceRecord(x))
-    .flatMap(x => x ? [x] : []);
-
-  const zones = await provider.ListZones();
-  assertEquals(zones.length, 1);
-
-  const foundEndpoints = await provider.ListRecords(zones[0]);
-  assertEquals(foundEndpoints.length, 1);
-
-  const state: ZoneState<CloudflareRecord> = {
-    Zone: zones[0],
-    Existing: foundEndpoints,
-    Desired: newEndpoints,
-  };
-  state.Diff = buildDiff(state, provider);
-
-  await provider.ApplyChanges(state);
+  }]);
 
   apiMock.verifyCompletion();
 });
@@ -72,7 +55,7 @@ Deno.test('cloudflare partial record update', async () => {
     data: { name: 'www.example.com', type: 'A', content: '3.3.3.3', ttl: 1 },
   }]);
 
-  const newEndpoints = new Array<SourceRecord>({
+  await applyToProvider(provider, new NoopRegistry({type: 'noop'}), [{
     annotations: {
       // 'external-dns.alpha.kubernetes.io/cloudflare-proxied': 'true',
     },
@@ -90,27 +73,7 @@ Deno.test('cloudflare partial record update', async () => {
       type: 'A',
       target: '3.3.3.3',
     },
-  }).map(x => provider.EnrichSourceRecord(x))
-    .flatMap(x => x ? [x] : []);
-
-  const zones = await provider.ListZones();
-  assertEquals(zones.length, 1);
-
-  const foundEndpoints = await provider.ListRecords(zones[0]);
-  assertEquals(foundEndpoints.length, 2);
-
-  const state: ZoneState<CloudflareRecord> = {
-    Zone: zones[0],
-    Existing: foundEndpoints,
-    Desired: newEndpoints,
-  };
-  state.Diff = buildDiff(state, provider);
-
-  // for (const change of state.Diff) {
-  //   console.log(change);
-  // }
-
-  await provider.ApplyChanges(state);
+  }]);
 
   apiMock.verifyCompletion();
 });
