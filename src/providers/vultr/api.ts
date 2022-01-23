@@ -1,3 +1,5 @@
+import { JsonClient } from "../json-client.ts";
+
 export interface VultrApiSurface {
   listAllZones(): AsyncGenerator<DomainRecord>;
   listAllRecords(zone: string): AsyncGenerator<DnsRecord>;
@@ -14,41 +16,24 @@ export interface VultrApiSurface {
   ): Promise<void>;
 }
 
-export class VultrApi implements VultrApiSurface {
+export class VultrApi extends JsonClient implements VultrApiSurface {
 
   #apiKey: string;
   constructor() {
+    super('vultr', `https://api.vultr.com/v2/`);
+
     const apiKey = Deno.env.get('VULTR_API_KEY');
     if (!apiKey) throw new Error(`VULTR_API_KEY is required to use Vultr`);
     this.#apiKey = apiKey;
   }
-
-  async _doHttp(path: string, opts?: RequestInit & {query?: URLSearchParams}) {
-    if (opts?.query?.toString()) {
-      path += (path.includes('?') ? '&' : '?') + opts.query.toString();
-    }
-    const headers = new Headers(opts?.headers);
+  protected addAuthHeaders(headers: Headers) {
     headers.set('authorization', `Bearer ${this.#apiKey}`);
-    headers.set('accept', `application/json`);
-    const resp = await fetch(new URL(path, `https://api.vultr.com`), {
-      ...opts,
-      headers,
-    });
-    console.error('   ', opts?.method ?? 'GET', 'vultr', path, resp.status);
-    if (resp.status == 204) {
-      resp.text();
-      return null;
-    } else if (resp.status >= 400) {
-      const text = await resp.text();
-      throw new Error(`Vultr HTTP ${resp.status} ${resp.statusText}: ${text}`);
-    }
-    return await resp.json();
   }
 
-  listZones(pageToken?: string): Promise<DomainList> {
+  listZones(pageToken?: string) {
     const query = new URLSearchParams;
     if (pageToken) query.set('cursor', pageToken);
-    return this._doHttp(`/v2/domains`, {query});
+    return this.doHttp<DomainList>({ path: `domains`, query });
   }
   async *listAllZones() {
     let page: DomainList | undefined;
@@ -58,11 +43,11 @@ export class VultrApi implements VultrApiSurface {
     } while (page.meta.links.next);
   }
 
-  listRecords(zone: string, pageToken?: string): Promise<RecordList> {
+  listRecords(zone: string, pageToken?: string) {
     if (!zone) throw new Error(`Zone is required`);
     const query = new URLSearchParams;
     if (pageToken) query.set('cursor', pageToken);
-    return this._doHttp(`/v2/domains/${zone}/records`, {query});
+    return this.doHttp<RecordList>({ path: `domains/${zone}/records`, query });
   }
   async *listAllRecords(zone: string) {
     let page: RecordList | undefined;
@@ -72,33 +57,32 @@ export class VultrApi implements VultrApiSurface {
     } while (page.meta.links.next);
   }
 
-  createRecord(zone: string, record: DnsRecordData): Promise<DnsRecord> {
+  createRecord(zone: string, record: DnsRecordData) {
     if (!zone) throw new Error(`Zone is required`);
     if (!record) throw new Error(`Record is required`);
-    return this._doHttp(`/v2/domains/${zone}/records`, {
+    return this.doHttp<DnsRecord>({
+      path: `domains/${zone}/records`,
       method: 'POST',
-      body: JSON.stringify(record),
-      headers: {
-        'content-type': 'application/json',
-      }});
+      jsonBody: record,
+    });
   }
 
-  async updateRecord(zone: string, recordId: string, changes: Partial<Omit<DnsRecordData, "type">>): Promise<void> {
+  async updateRecord(zone: string, recordId: string, changes: Partial<Omit<DnsRecordData, "type">>) {
     if (!zone) throw new Error(`Zone is required`);
     if (!recordId) throw new Error(`Record ID is required`);
     if (!changes) throw new Error(`Record changes are required`);
-    await this._doHttp(`/v2/domains/${zone}/records/${recordId}`, {
+    await this.doHttp({
+      path: `domains/${zone}/records/${recordId}`,
       method: 'PATCH',
-      body: JSON.stringify(changes),
-      headers: {
-        'content-type': 'application/json',
-      }});
+      jsonBody: changes,
+    });
   }
 
-  async deleteRecord(zone: string, recordId: string): Promise<void> {
+  async deleteRecord(zone: string, recordId: string) {
     if (!zone) throw new Error(`Zone is required`);
     if (!recordId) throw new Error(`Record ID is required`);
-    await this._doHttp(`/v2/domains/${zone}/records/${recordId}`, {
+    await this.doHttp({
+      path: `domains/${zone}/records/${recordId}`,
       method: 'DELETE',
     });
   }

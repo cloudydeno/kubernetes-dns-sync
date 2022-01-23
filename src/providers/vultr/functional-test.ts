@@ -11,7 +11,6 @@ Deno.test('Vultr integration test', async () => {
     type: 'vultr',
     domain_filter: ['kubernetes-dns-sync.com'],
   });
-  await resetZone(provider, 'kubernetes-dns-sync.com');
 
   const registry = new NoopRegistry({type: 'noop'});
 
@@ -150,7 +149,6 @@ Deno.test('Vultr integration test: MX', async () => {
     type: 'vultr',
     domain_filter: ['kubernetes-dns-sync.com'],
   });
-  await resetZone(provider, 'kubernetes-dns-sync.com');
 
   const registry = new NoopRegistry({type: 'noop'});
 
@@ -241,13 +239,3 @@ Deno.test('Vultr integration test: MX', async () => {
   }
 
 });
-
-async function resetZone(provider: VultrProvider, zoneName: string) {
-  // await provider.api._doHttp(`zones/${zoneName}.`, {
-  //   method: 'DELETE',
-  // }).catch(() => console.log(`Test zone ${zoneName} did not exist yet, all good`));
-  // await provider.api._doHttp(`zones`, {
-  //   method: 'POST',
-  //   body: JSON.stringify({name: `${zoneName}.`, kind: 'Native'}),
-  // });
-}

@@ -1,59 +1,51 @@
-export class PowerDnsApi {
+import { JsonClient } from "../json-client.ts";
+
+export class PowerDnsApi extends JsonClient {
 
   #apiKey: string;
-  #apiBase: URL;
   constructor(
     endpoint: string,
     serverId: string,
   ) {
+    super('powerdns', new URL(`v1/servers/${encodeURIComponent(serverId)}/`, endpoint));
+
     const apiKey = Deno.env.get('POWERDNS_API_KEY');
     if (!apiKey) throw new Error(`POWERDNS_API_KEY is required to use PowerDNS`);
     this.#apiKey = apiKey;
-
-    this.#apiBase = new URL(
-      `v1/servers/${encodeURIComponent(serverId)}/`, endpoint);
   }
-
-  async _doHttp(path: string, opts?: RequestInit & {query?: URLSearchParams}) {
-    if (opts?.query?.toString()) {
-      path += (path.includes('?') ? '&' : '?') + opts.query.toString();
-    }
-    const headers = new Headers(opts?.headers);
+  protected addAuthHeaders(headers: Headers) {
     headers.set('x-api-key', this.#apiKey);
-    headers.set('accept', `application/json`);
-    const resp = await fetch(new URL(path, this.#apiBase), {
-      ...opts,
-      headers,
-    });
-    console.error('   ', opts?.method ?? 'GET', 'powerdns', new URL(path, this.#apiBase).pathname, resp.status);
-    if (resp.status == 204) {
-      resp.text();
-      return null;
-    } else if (resp.status >= 400) {
-      const text = await resp.text();
-      throw new Error(`PowerDNS HTTP ${resp.status} ${resp.statusText}: ${text}`);
-    }
-    return await resp.json();
   }
 
-  async listAllZones(): Promise<ZoneList> {
-    return await this._doHttp(`zones`);
+  async listAllZones() {
+    return await this.doHttp<ZoneList>({ path: `zones` });
   }
 
-  async getZone(zone: string): Promise<ZoneDetails> {
+  async getZone(zone: string) {
     if (!zone) throw new Error(`Zone is required`);
-    return await this._doHttp(`zones/${zone}`);
+    return await this.doHttp<ZoneDetails>({ path: `zones/${zone}` });
   }
 
-  async patchZoneRecords(zone: string, rrsets: DnsRecordSet[]): Promise<void> {
+  async patchZoneRecords(zone: string, rrsets: DnsRecordSet[]) {
     if (!zone) throw new Error(`Zone is required`);
     if (!rrsets.length) throw new Error(`Record is required`);
-    return await this._doHttp(`zones/${zone}`, {
+    await this.doHttp({
+      path: `zones/${zone}`,
       method: 'PATCH',
-      body: JSON.stringify({ rrsets }),
-      headers: {
-        'content-type': 'application/json',
-      }});
+      jsonBody: { rrsets },
+    });
+  }
+
+  async recreateEntireZone(zone: string) {
+    await this.doHttp({
+      path: `zones/${zone}.`,
+      method: 'DELETE',
+    }).catch(() => console.log(`Test zone ${zone} did not exist yet, all good`));
+    await this.doHttp({
+      path: `zones`,
+      method: 'POST',
+      jsonBody: {name: `${zone}.`, kind: 'Native'},
+    });
   }
 }
 

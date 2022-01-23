@@ -1,8 +1,12 @@
 import { ServiceAccount } from "../../deps.ts";
 
-export class GoogleCloudDnsApi {
+import { JsonClient } from "../json-client.ts";
+
+export class GoogleCloudDnsApi extends JsonClient {
 
   constructor(accessMode: 'readwrite' | 'readonly', noRefresh: boolean) {
+    super('google', `https://dns.googleapis.com/dns/v1/`);
+
     const credPath = Deno.env.get('GOOGLE_APPLICATION_CREDENTIALS');
     if (!credPath) throw new Error(`GOOGLE_APPLICATION_CREDENTIALS is required to use Google`);
     this.#svcAccount = ServiceAccount.readFromFileSync(credPath);
@@ -34,34 +38,18 @@ export class GoogleCloudDnsApi {
     }, Math.max(60 * 1000, expireAfterMillis));
     return newToken.access_token;
   }
-
-  async _doHttp(path: string, opts?: RequestInit & {query?: URLSearchParams}) {
-    if (opts?.query?.toString()) {
-      path += (path.includes('?') ? '&' : '?') + opts.query.toString();
-    }
-    const headers = new Headers(opts?.headers);
+  protected async addAuthHeaders(headers: Headers) {
     headers.set('authorization', `Bearer ${await this.getAccessToken()}`);
-    headers.set('accept', `application/json`);
-    const resp = await fetch(new URL(path, `https://dns.googleapis.com/dns/v1/`), {
-      ...opts,
-      headers,
-    });
-    console.error('   ', opts?.method ?? 'GET', 'google', path, resp.status);
-    if (resp.status == 204) {
-      resp.text();
-      return null;
-    } else if (resp.status >= 400) {
-      const text = await resp.text();
-      throw new Error(`Google HTTP ${resp.status} ${resp.statusText}: ${text}`);
-    }
-    return await resp.json();
   }
 
-  listZones(projectId: string, pageToken?: string | null): Promise<Schema$ManagedZonesListResponse> {
+  listZones(projectId: string, pageToken?: string | null) {
     if (!projectId) throw new Error(`Project is required`);
     const query = new URLSearchParams;
     if (pageToken) query.set('pageToken', pageToken);
-    return this._doHttp(`projects/${projectId}/managedZones`, {query});
+    return this.doHttp<Schema$ManagedZonesListResponse>({
+      path: `projects/${projectId}/managedZones`,
+      query,
+    });
   }
   async *listAllZones(projectId: string) {
     let page: Schema$ManagedZonesListResponse | undefined;
@@ -71,12 +59,15 @@ export class GoogleCloudDnsApi {
     } while (page.nextPageToken);
   }
 
-  listRecords(projectId: string, zoneId: string, pageToken?: string | null): Promise<Schema$ResourceRecordSetsListResponse> {
+  listRecords(projectId: string, zoneId: string, pageToken?: string | null) {
     if (!projectId) throw new Error(`Project is required`);
     if (!zoneId) throw new Error(`Zone is required`);
     const query = new URLSearchParams;
     if (pageToken) query.set('pageToken', pageToken);
-    return this._doHttp(`projects/${projectId}/managedZones/${zoneId}/rrsets`, {query});
+    return this.doHttp<Schema$ResourceRecordSetsListResponse>({
+      path: `projects/${projectId}/managedZones/${zoneId}/rrsets`,
+      query,
+    });
   }
   async *listAllRecords(projectId: string, zoneId: string) {
     let page: Schema$ResourceRecordSetsListResponse | undefined;
@@ -86,23 +77,24 @@ export class GoogleCloudDnsApi {
     } while (page.nextPageToken);
   }
 
-  submitChange(projectId: string, zoneId: string, changes: Schema$Change): Promise<Schema$Change> {
+  submitChange(projectId: string, zoneId: string, changes: Schema$Change) {
     if (!projectId) throw new Error(`Project is required`);
     if (!zoneId) throw new Error(`Zone is required`);
     if (!changes) throw new Error(`Changes are required`);
-    return this._doHttp(`projects/${projectId}/managedZones/${zoneId}/changes`, {
+    return this.doHttp<Schema$Change>({
+      path: `projects/${projectId}/managedZones/${zoneId}/changes`,
       method: 'POST',
-      body: JSON.stringify(changes),
-      headers: {
-        'content-type': 'application/json',
-      }});
+      jsonBody: changes,
+    });
   }
 
-  getChange(projectId: string, zoneId: string, changeId: string): Promise<Schema$Change> {
+  getChange(projectId: string, zoneId: string, changeId: string) {
     if (!projectId) throw new Error(`Project is required`);
     if (!zoneId) throw new Error(`Zone is required`);
     if (!changeId) throw new Error(`Change is required`);
-    return this._doHttp(`projects/${projectId}/managedZones/${zoneId}/changes/${changeId}`);
+    return this.doHttp<Schema$Change>({
+      path: `projects/${projectId}/managedZones/${zoneId}/changes/${changeId}`,
+    });
   }
 }
 
