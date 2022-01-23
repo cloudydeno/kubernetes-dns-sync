@@ -69,7 +69,8 @@ and set it as the `CLOUDFLARE_TOKEN` environment variable.
 ```toml
 [[provider]]
 type = "cloudflare"
-# proxied_by_default = true
+proxied_by_default = true # Have traffic go through Cloudflare's CDN by default
+# allow_proxied_wildcards = false # 'true' here requires Cloudflare Enterprise
 ### These let you give specific IDs instead of finding what you can access
 # account_id = ["zjh..etc..aio"]
 # zone_id_filter = ["058..etc..90q"]

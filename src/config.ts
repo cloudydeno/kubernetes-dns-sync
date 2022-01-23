@@ -56,6 +56,7 @@ export type SourceConfig =
 export interface CloudflareProviderConfig {
   type: "cloudflare";
   proxied_by_default?: boolean;
+  allow_proxied_wildcards?: boolean; // true requires an Enterprise plan
   // These let you give specific IDs instead of finding what you can access
   account_id?: string;
   zone_id_filter?: string[];

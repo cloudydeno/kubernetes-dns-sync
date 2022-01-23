@@ -63,7 +63,7 @@ export class CloudflareProvider implements DnsProvider<CloudflareRecord> {
 
     const unproxyable = new Set(['LOC', 'MX', 'NS', 'SPF', 'TXT', 'SRV']);
     if (unproxyable.has(record.dns.type)) proxied = false;
-    if (record.dns.fqdn.includes('*')) proxied = false;
+    if (record.dns.fqdn.includes('*') && !this.config.allow_proxied_wildcards) proxied = false;
     // TODO: also private IPv4 space
 
     return { proxied, ...enriched };
