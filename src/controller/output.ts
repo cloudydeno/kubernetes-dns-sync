@@ -91,7 +91,8 @@ export function printChanges<T extends BaseRecord>(changes: ZoneState<T>) {
       lines.push(printRecord('delete', rec));
     }
 
-    log.info(lines.join('\n')+'\n');
+    // If we're leaving no records behind here, let's stress that a bit.
+    log[change.type == 'deletion' ? 'warning' : 'info'](lines.join('\n')+'\n');
   }
 }
 
