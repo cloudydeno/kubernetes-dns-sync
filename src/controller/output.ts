@@ -67,8 +67,16 @@ export async function* discoverProviderChanges<T extends BaseRecord>(
 }
 
 function printRecord(prefix: string, record: BaseRecord) {
-  const rrdata = transformToRrdata(record.dns);
-  return `    ${prefix} ttl=${record.dns.ttl} data=${rrdata}`;
+  const bits = [
+    `ttl=${record.dns.ttl}`,
+    `data=${transformToRrdata(record.dns)}`,
+  ];
+  // cloudflare proxy status
+  // TODO: cleaner way of registering any additional fields that are important to print
+  if ('proxied' in record) {
+    bits.unshift(`proxied=${(record as unknown as {proxied:boolean}).proxied}`);
+  }
+  return `    ${prefix} ${bits.join(' ')}`;
 }
 
 export function printChanges<T extends BaseRecord>(changes: ZoneState<T>) {

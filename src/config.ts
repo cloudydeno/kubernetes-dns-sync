@@ -53,6 +53,16 @@ export type SourceConfig =
 | NodeSourceConfig
 ;
 
+export interface CloudflareProviderConfig {
+  type: "cloudflare";
+  proxied_by_default?: boolean;
+  allow_proxied_wildcards?: boolean; // true requires an Enterprise plan
+  // These let you give specific IDs instead of finding what you can access
+  account_id?: string;
+  zone_id_filter?: string[];
+  // This filters the list of zones that was found
+  domain_filter?: string[];
+}
 export interface GoogleProviderConfig {
   type: "google";
   project_id?: string;
@@ -72,6 +82,7 @@ export interface PowerDnsProviderConfig {
   // rectify_dnssec?: boolean;
 }
 export type ProviderConfig =
+| CloudflareProviderConfig
 | GoogleProviderConfig
 | VultrProviderConfig
 | PowerDnsProviderConfig

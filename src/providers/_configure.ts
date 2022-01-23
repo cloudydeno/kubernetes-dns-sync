@@ -1,10 +1,13 @@
 import type { ProviderConfig } from "../config.ts";
+import { CloudflareProvider } from "./cloudflare/mod.ts";
 import { GoogleProvider } from "./google/mod.ts";
 import { PowerDnsProvider } from "./powerdns/mod.ts";
 import { VultrProvider } from "./vultr/mod.ts";
 
 export function configureProvider(config: ProviderConfig) {
   switch (config.type) {
+    case 'cloudflare':
+      return new CloudflareProvider(config);
     case 'google':
       return new GoogleProvider(config);
     case 'vultr':
