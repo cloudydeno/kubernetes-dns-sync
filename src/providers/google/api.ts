@@ -81,6 +81,7 @@ export class GoogleCloudDnsApi extends JsonClient {
     if (!projectId) throw new Error(`Project is required`);
     if (!zoneId) throw new Error(`Zone is required`);
     if (!changes) throw new Error(`Changes are required`);
+    changes.kind ??= "dns#change";
     return this.doHttp<Schema$Change>({
       path: `projects/${projectId}/managedZones/${zoneId}/changes`,
       method: 'POST',
@@ -177,7 +178,7 @@ export interface Schema$ResourceRecordSet {
 }
 
 export interface Schema$Change {
-  kind: "dns#change";
+  kind?: "dns#change";
   additions?: Schema$ResourceRecordSet[];
   deletions?: Schema$ResourceRecordSet[];
   id?: string | null;

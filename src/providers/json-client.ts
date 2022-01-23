@@ -1,3 +1,5 @@
+import { log } from "../deps.ts";
+
 export abstract class JsonClient {
   constructor(
     public readonly name: string,
@@ -30,7 +32,10 @@ export abstract class JsonClient {
       headers,
     });
 
-    console.debug(`${method} ${this.name} ${path} ${resp.status}`);
+    // Definitely one of the ugliest logging statements I've written
+    log.getLogger('http')[(resp.status >= 400) ? 'error' : 'info'](
+      `${method} ${this.name} ${path} ${resp.status}`,
+      {method, path, status: resp.status});
 
     if (resp.status == 204) {
       resp.body?.cancel();

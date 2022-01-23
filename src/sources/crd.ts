@@ -1,4 +1,4 @@
-import { ExternaldnsV1alpha1Api, KubernetesClient } from '../deps.ts';
+import { ExternaldnsV1alpha1Api, KubernetesClient, log } from '../deps.ts';
 
 import type { CrdSourceConfig } from "../config.ts";
 import type { DnsSource, SourceRecord, PlainRecordData } from "../types.ts";
@@ -35,10 +35,10 @@ export class CrdSource implements DnsSource {
         if (!rule.dnsName || !rule.recordType || !rule.targets?.length) continue;
 
         if (rule.providerSpecific?.length) {
-          console.error(`WARN: CRD 'providerSpecific' field is not currently used by dns-sync`);
+          log.warning(`WARN: CRD 'providerSpecific' field is not currently used by dns-sync`);
         }
         if (Object.keys(rule.labels ?? {}).length) {
-          console.error(`WARN: CRD 'labels' field is not currently used by dns-sync`);
+          log.warning(`WARN: CRD 'labels' field is not currently used by dns-sync`);
         }
 
         const records = new Array<PlainRecordData>();
@@ -90,7 +90,7 @@ export class CrdSource implements DnsSource {
             status: {
               observedGeneration: generation,
             }})
-          .catch(err => console.warn('Failed to observe DNSEndpoint CRD:', err.message)));
+          .catch(err => log.warning(`Failed to observe DNSEndpoint CRD: ${err.message}`)));
       }
 
     }
@@ -101,7 +101,7 @@ export class CrdSource implements DnsSource {
     const finalizer = this.#finalizers.get(resourceKey);
     if (finalizer) {
       this.#finalizers.delete(resourceKey);
-      console.debug('   ', 'Observing', resourceKey);
+      log.debug(`Observing ${resourceKey}`);
       await finalizer();
     }
   }

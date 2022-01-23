@@ -76,7 +76,5 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
     });
   }
 
-  // console.log(JSON.stringify(changes, null, 2));
-
   return changes;
 }

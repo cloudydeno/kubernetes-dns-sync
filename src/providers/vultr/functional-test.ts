@@ -166,7 +166,6 @@ Deno.test('Vultr integration test: MX', async () => {
 
     const result = await provider.ListRecords({ fqdn: 'kubernetes-dns-sync.com', zoneId: 'kubernetes-dns-sync.com' }).then(x => x.filter(y => y.dns.type !== 'NS'));
     assertEquals(result.length, 1);
-    console.log(result[0])
     assertObjectMatch(result[0].dns, {
       "fqdn": "kubernetes-dns-sync.com",
       "priority": 5,

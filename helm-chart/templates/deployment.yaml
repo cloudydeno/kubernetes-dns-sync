@@ -35,6 +35,12 @@ spec:
             {{- else }}
             - --dry-run # don't make changes, only log them
             {{- end }}
+            {{- if .Values.dnsSync.logging.debug }}
+            - --debug
+            {{- end }}
+            {{- if .Values.dnsSync.logging.logAsJson }}
+            - --log-as-json
+            {{- end }}
           {{- if .Values.dnsSync.serveMetrics }}
             - --serve-metrics # openmetrics/prometheus on port 9090
           ports:
@@ -46,7 +52,7 @@ spec:
           envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if .Values.dnsSync.noColor }}
+          {{- if .Values.dnsSync.logging.noColor }}
           env:
             - name: NO_COLOR
               value: NO_COLOR

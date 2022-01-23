@@ -68,8 +68,6 @@ export class PowerDnsProvider implements DnsProvider<BaseRecord> {
   }
 
   async ApplyChanges(changes: ZoneState<BaseRecord>): Promise<void> {
-    console.log('powerdns: Have', changes.Diff?.length, 'changes for', changes.Zone.fqdn);
-
     const patch: DnsRecordSet[] = changes.Diff!.map(change => {
       const firstDesired = (change.desired[0] || change.existing[0]);
       return {
@@ -85,10 +83,6 @@ export class PowerDnsProvider implements DnsProvider<BaseRecord> {
         })),
       };
     });
-
-    for (const item of patch) {
-      console.log('powerdns: -', item.changetype, 'on', item.name, item.type, item.ttl, 'to', item.records);
-    }
 
     await this.api.patchZoneRecords(changes.Zone.zoneId, patch);
   }

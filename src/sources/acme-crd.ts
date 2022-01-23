@@ -1,4 +1,4 @@
-import { AcmeCertManagerIoV1Api, KubernetesClient } from '../deps.ts';
+import { AcmeCertManagerIoV1Api, KubernetesClient, log } from '../deps.ts';
 
 import type { AcmeCrdSourceConfig } from "../config.ts";
 import type { DnsSource, SourceRecord } from "../types.ts";
@@ -44,7 +44,7 @@ export class AcmeCrdSource implements DnsSource {
 
       // Require extra config to allow wildcard domains
       if (wildcard && this.config.allow_wildcards == false) {
-        console.error(`ACME Challenge ${namespace}/${name} is for a wildcard, but that isn't allowed by dns-sync's configuration`);
+        log.warning(`ACME Challenge ${namespace}/${name} is for a wildcard, but that isn't allowed by dns-sync's configuration. Ignoring`);
         continue;
       }
 
@@ -75,7 +75,7 @@ export class AcmeCrdSource implements DnsSource {
     const finalizer = this.#finalizers.get(resourceKey);
     if (finalizer) {
       this.#finalizers.delete(resourceKey);
-      console.debug('   ', 'Observing', resourceKey);
+      log.debug(`Observing ${resourceKey}`);
       await finalizer();
     }
   }

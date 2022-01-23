@@ -7,6 +7,7 @@ import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints
 import { readTxtValue } from "../../dns-logic/rrdata.ts";
 
 import { DnsRecord, DnsRecordData, VultrApi, VultrApiSurface } from "./api.ts";
+import { log } from "../../deps.ts";
 
 export type VultrRecord = BaseRecord & {
   // zone: string;
@@ -127,7 +128,7 @@ function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | fa
       };
     }
     default:
-      console.error(`TODO: unsupported record type ${type} observed in Vultr zone at ${fqdn}`);
+      log.warning(`TODO: unsupported record type ${type} observed in Vultr zone at ${fqdn}`);
       const _: never = type;
   }
   return false;

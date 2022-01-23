@@ -7,6 +7,7 @@ import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints
 import { transformFromRrdata, transformToRrdata } from "../../dns-logic/rrdata.ts";
 
 import { GoogleCloudDnsApi, Schema$Change, Schema$ResourceRecordSet } from "./api.ts";
+import { log } from "../../deps.ts";
 
 interface GoogleRecord extends BaseRecord {
   recordSet?: Schema$ResourceRecordSet;
@@ -73,25 +74,22 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
 
   async ApplyChanges(state: ZoneState<GoogleRecord>): Promise<void> {
     const zone = state.Zone;
-
-    const change = {
-      kind: "dns#change" as const,
-      additions: new Array<Schema$ResourceRecordSet>(),
-      deletions: new Array<Schema$ResourceRecordSet>(),
-    };
+    const additions = new Array<Schema$ResourceRecordSet>();
+    const deletions = new Array<Schema$ResourceRecordSet>();
 
     for (const diff of state.Diff ?? []) {
       // If there's anything we want to change, we have to do a full replacement
       // Making only a creation or only a deletion is only for new or removed rrsets
+      // Note that if we raced anyone else, our apply could fail for that sync pass
 
       if (diff.existing.length) {
-        change.deletions.push(diff.toDelete[0].recordSet!);
+        deletions.push(diff.toDelete[0].recordSet!);
       }
 
       if (diff.desired.length) {
         const {fqdn, type} = diff.desired[0].dns;
         const ttls = diff.desired.map(x => x.dns.ttl).flatMap(x => x ? [x] : []);
-        change.additions.push({
+        additions.push({
           kind: 'dns#resourceRecordSet',
           name: `${fqdn}.`,
           type,
@@ -102,31 +100,29 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
     }
 
     // Actually submit the changes
-    if (change.additions!.length < 1 && change.deletions!.length < 1) return;
+    if (additions!.length < 1 && deletions!.length < 1) return;
 
-    console.log('-->', 'Cloud DNS zone', zone.zoneName,
-      '-', change.deletions!.length, 'deletions',
-      '-', change.additions!.length, 'additions');
+    log.debug(`Cloud DNS zone ${zone.zoneName
+      } - ${deletions?.length} deletions - ${additions?.length} additions`);
 
     let submitted: Schema$Change = await this.api
-      .submitChange(this.projectId, zone.zoneId, change);
+      .submitChange(this.projectId, zone.zoneId, { additions, deletions });
 
-    console.log('==>', 'Cloud DNS change', submitted.id,
-      'on', zone.zoneName,
-      'at', submitted.startTime,
-      'is', submitted.status);
+    log.info(`Cloud DNS change ${submitted.id
+      } on ${zone.zoneName} at ${submitted.startTime
+      } is ${submitted.status} ...`);
 
     let sleepSecs = 0;
     while (submitted.status === 'pending') {
       if ((sleepSecs += 1) >= 30) throw new Error(
         `Google Cloud DNS changeset has been pending for a long-ass time!`);
+      log.debug(`Waiting another ${sleepSecs}s for ${submitted.status} Google changeset...`);
       await new Promise(ok => setTimeout(ok, sleepSecs * 1000));
 
       submitted = await this.api
         .getChange(this.projectId, zone.zoneId, submitted.id!);
 
-      console.log('   ', 'Cloud DNS change', submitted.id,
-        'is', submitted.status);
+      log.info(`Cloud DNS change ${submitted.id} is ${submitted.status}`);
     }
 
   }

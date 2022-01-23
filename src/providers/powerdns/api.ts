@@ -1,3 +1,5 @@
+import { log } from "../../deps.ts";
+
 import { JsonClient } from "../json-client.ts";
 
 export class PowerDnsApi extends JsonClient {
@@ -40,7 +42,7 @@ export class PowerDnsApi extends JsonClient {
     await this.doHttp({
       path: `zones/${zone}.`,
       method: 'DELETE',
-    }).catch(() => console.log(`Test zone ${zone} did not exist yet, all good`));
+    }).catch(() => log.info(`Test zone ${zone} did not exist yet, so I couldn't delete it`));
     await this.doHttp({
       path: `zones`,
       method: 'POST',

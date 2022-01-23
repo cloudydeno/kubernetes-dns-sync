@@ -1,3 +1,5 @@
+import { log } from "../deps.ts";
+
 import type {
   PlainRecord, PlainRecordAddress,
   BaseRecord, SourceRecord,
@@ -51,12 +53,12 @@ export function getPlainRecordKey(record: PlainRecord) {
   }
 }
 
-export function enrichSourceRecord<Ttype extends PlainRecord['type']>(record: SourceRecord, opts: {
+export function enrichSourceRecord(record: SourceRecord, opts: {
   defaultTtl: number,
   minTtl: number,
 }): BaseRecord | null {
   if (!(record.dns.type in AllSupportedRecords)) {
-    console.error(`WARN: unsupported desired record type ${record.dns.type} for ${record.dns.fqdn}`);
+    log.warning(`WARN: unsupported desired record type ${record.dns.type} for ${record.dns.fqdn}`);
     return null; // toss unsupported records
   }
 
