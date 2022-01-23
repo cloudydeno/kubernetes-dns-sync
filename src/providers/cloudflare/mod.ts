@@ -19,6 +19,17 @@ const unsupportedRecords: Record<UnsupportedRecords, true> = {
   SOA: true,
 }
 
+export function canBeProxied(record: {
+  fqdn: string;
+  type: string;
+}, config?: CloudflareProviderConfig) {
+  const unproxyable = new Set(['LOC', 'MX', 'NS', 'SPF', 'TXT', 'SRV']);
+  if (unproxyable.has(record.type)) return false;
+  if (record.fqdn.includes('*') && !config?.allow_proxied_wildcards) return false;
+  // TODO: also private IPv4 space
+  return true;
+}
+
 export class CloudflareProvider implements DnsProvider<CloudflareRecord> {
   constructor(
     public config: CloudflareProviderConfig,
@@ -39,7 +50,7 @@ export class CloudflareProvider implements DnsProvider<CloudflareRecord> {
 
   async ListRecords(zone: Zone): Promise<CloudflareRecord[]> {
     const records = new Array<CloudflareRecord>();
-    for await (const record of this.api.listAllRecords(zone.fqdn)) {
+    for await (const record of this.api.listAllRecords(zone.zoneId)) {
       const recordData = transformFromApi(zone.fqdn, record);
       if (!recordData) continue;
       records.push({
@@ -62,14 +73,11 @@ export class CloudflareProvider implements DnsProvider<CloudflareRecord> {
     if (!enriched) return enriched;
 
     const annotationVal = record.annotations['external-dns.alpha.kubernetes.io/cloudflare-proxied'];
-    let proxied = (annotationVal ? annotationVal == 'true' : null)
+    const proxyable = canBeProxied(enriched.dns, this.config);
+    const proxied = proxyable &&
+      ((annotationVal ? annotationVal == 'true' : null)
         ?? this.config.proxied_by_default
-        ?? false;
-
-    const unproxyable = new Set(['LOC', 'MX', 'NS', 'SPF', 'TXT', 'SRV']);
-    if (unproxyable.has(record.dns.type)) proxied = false;
-    if (record.dns.fqdn.includes('*') && !this.config.allow_proxied_wildcards) proxied = false;
-    // TODO: also private IPv4 space
+        ?? false);
 
     return { proxied, ...enriched };
   }

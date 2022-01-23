@@ -1,4 +1,5 @@
 import { DnsRecord, DnsRecordData, CloudflareApiSurface, CloudflareZone } from "./api.ts";
+import { canBeProxied } from "./mod.ts";
 
 export class CloudflareApiMock implements CloudflareApiSurface {
 
@@ -10,7 +11,7 @@ export class CloudflareApiMock implements CloudflareApiSurface {
 
   /** Zone that it is an error to interact with */
   addMockedDeadZone(zoneId: string, domain: string) {
-    this.#zoneMeta.set(domain, {
+    this.#zoneMeta.set(zoneId, {
       id: zoneId,
       name: domain,
       created_on: 'no',
@@ -20,18 +21,18 @@ export class CloudflareApiMock implements CloudflareApiSurface {
     this.#zones.set(domain, undefined);
   }
   addMockedZone(zoneId: string, domain: string, records: Array<{data: DnsRecordData, expect: 'retained' | 'deletion' | 'creation'}>) {
-    this.#zoneMeta.set(domain, {
+    this.#zoneMeta.set(zoneId, {
       id: zoneId,
       name: domain,
       created_on: 'no',
       modified_on: 'no',
       status: 'active',
     });
-    this.#zones.set(domain, records.flatMap((input, idx) => {
+    this.#zones.set(zoneId, records.flatMap((input, idx) => {
       const id = `${zoneId}:${idx}:${input.data.type}`;
       const fullRecord: DnsRecord = {
         priority: -1, // TODO: verify actual behavior
-        proxied: true,
+        proxied: canBeProxied({type: input.data.type, fqdn: input.data.name}),
         ...input.data,
         id,
         proxiable: true,
