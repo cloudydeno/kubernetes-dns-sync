@@ -1,3 +1,5 @@
+import { JsonClient } from "../json-client.ts";
+
 export interface CloudflareApiSurface {
   listAllZones(accountId?: string): AsyncGenerator<CloudflareZone>;
   listAllRecords(zoneId: string): AsyncGenerator<DnsRecord>;
@@ -29,36 +31,22 @@ function makeOpts(
   return params;
 }
 
-const baseUrl = `https://api.cloudflare.com/client/v4/`;
-export class CloudflareApi implements CloudflareApiSurface {
+export class CloudflareApi extends JsonClient implements CloudflareApiSurface {
 
   #apiKey: string;
   constructor() {
+    super('cloudflare', `https://api.cloudflare.com/client/v4/`);
+
     const apiKey = Deno.env.get('CLOUDFLARE_TOKEN');
     if (!apiKey) throw new Error(`CLOUDFLARE_TOKEN is required to use Cloudflare`);
     this.#apiKey = apiKey;
   }
-
-  async _doHttp<T>(opts: RequestInit & {path: string, query?: URLSearchParams}) {
-    const {path, query, headers: headersInit, ...rest} = opts;
-    const fullPath = query?.toString() ? `${path}?${query}` : path;
-    const headers = new Headers(headersInit);
+  protected addAuthHeaders(headers: Headers) {
     headers.set('authorization', `Bearer ${this.#apiKey}`);
-    headers.set('accept', `application/json`);
-    const resp = await fetch(new URL(fullPath, baseUrl), { ...rest, headers });
-    console.error('   ', opts?.method ?? 'GET', 'cloudflare', fullPath, resp.status);
-    if (resp.status == 204) {
-      resp.body?.cancel();
-      return {} as T;
-    } else if (resp.status >= 400) {
-      const text = await resp.text();
-      throw new Error(`Cloudflare HTTP ${resp.status} ${resp.statusText}: ${text}`);
-    }
-    return await resp.json() as T;
   }
 
   listZones(opts: { accountId?: string } & PageOptions) {
-    return this._doHttp<ListResponse<CloudflareZone>>({
+    return this.doHttp<ListResponse<CloudflareZone>>({
       path: `zones`,
       query: makeOpts(opts, {
         'account.id': opts.accountId,
@@ -76,7 +64,7 @@ export class CloudflareApi implements CloudflareApiSurface {
 
   listRecords(opts: { zoneId: string } & PageOptions) {
     if (!opts.zoneId) throw new Error(`Zone is required`);
-    return this._doHttp<ListResponse<DnsRecord>>({
+    return this.doHttp<ListResponse<DnsRecord>>({
       path: `zones/${opts.zoneId}/dns_records`,
       query: makeOpts(opts),
     });
@@ -93,7 +81,7 @@ export class CloudflareApi implements CloudflareApiSurface {
   async createRecord(zoneId: string, record: DnsRecordData) {
     if (!zoneId) throw new Error(`Zone ID is required`);
     if (!record) throw new Error(`Record is required`);
-    const resp = await this._doHttp<Response<DnsRecord>>({
+    const resp = await this.doHttp<Response<DnsRecord>>({
       path: `zones/${zoneId}/dns_records`,
       method: 'POST',
       body: JSON.stringify(record),
@@ -107,7 +95,7 @@ export class CloudflareApi implements CloudflareApiSurface {
     if (!zoneId) throw new Error(`Zone ID is required`);
     if (!recordId) throw new Error(`Record ID is required`);
     if (!changes) throw new Error(`Record changes are required`);
-    const resp = await this._doHttp<Response<DnsRecord>>({
+    const resp = await this.doHttp<Response<DnsRecord>>({
       path: `zones/${zoneId}/dns_records/${recordId}`,
       method: 'PATCH',
       body: JSON.stringify(changes),
@@ -120,7 +108,7 @@ export class CloudflareApi implements CloudflareApiSurface {
   async deleteRecord(zoneId: string, recordId: string) {
     if (!zoneId) throw new Error(`Zone ID is required`);
     if (!recordId) throw new Error(`Record ID is required`);
-    const resp = await this._doHttp<Response<{id: string}>>({
+    const resp = await this.doHttp<Response<{id: string}>>({
       path: `zones/${zoneId}/dns_records/${recordId}`,
       method: 'DELETE',
     });

@@ -1,7 +1,12 @@
-import { CloudflareProviderConfig } from "../../config.ts";
-import { AllSupportedRecords, enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
+import { log } from "../../deps.ts";
+
+import type { CloudflareProviderConfig } from "../../config.ts";
+import type {
+  BaseRecord, DnsProvider, PlainRecord, SourceRecord, Zone, ZoneState,
+} from "../../types.ts";
+
+import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
 import { readTxtValue } from "../../dns-logic/rrdata.ts";
-import { BaseRecord, DnsProvider, PlainRecord, SourceRecord, Zone, ZoneState } from "../../types.ts";
 import { CloudflareApi, CloudflareApiSurface, DnsRecord, DnsRecordData } from "./api.ts";
 
 export type CloudflareRecord = BaseRecord & {
@@ -100,7 +105,7 @@ export class CloudflareProvider implements DnsProvider<CloudflareRecord> {
 
 function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | false {
   // this is a lie to get types to help us out more:
-  const type = record.type as Exclude<keyof typeof AllSupportedRecords, UnsupportedRecords>;
+  const type = record.type as Exclude<PlainRecord['type'], UnsupportedRecords>;
 
   const fqdn = record.name;
   const ttl = record.ttl >= 0 ? record.ttl : undefined;
@@ -136,7 +141,7 @@ function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | fa
       };
     }
     default:
-      console.error(`TODO: unsupported record type ${type} observed in Cloudflare zone at ${fqdn}`);
+      log.debug(`TODO: unsupported record type ${type} observed in Cloudflare zone at ${fqdn}`);
       const _: never = type;
   }
   return false;
@@ -184,7 +189,7 @@ function transformForApi(zoneFqdn: string, dns: PlainRecord, proxied: boolean): 
         ttl: dns.ttl ?? 1,
         priority: dns.priority,
       };
-    case 'SOA': throw new Error(`Cloudflare does not support 'SOA' records`);
+    case 'SOA': throw new Error(`Cloudflare does not support "SOA" records`);
     default:
       const _: never = dns;
   }
