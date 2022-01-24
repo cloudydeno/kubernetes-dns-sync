@@ -104,13 +104,18 @@ export function printChanges<T extends BaseRecord>(changes: ZoneState<T>) {
   }
 }
 
-export function confirmBeforeApplyingChanges() {
+export async function confirmBeforeApplyingChanges() {
   if (Deno.args.includes('--dry-run')) {
     log.info("Doing no changes due to --dry-run");
     return false;
 
   } else if (!Deno.args.includes('--yes')) {
     const result = prompt(`==> Proceed with editing provider records?`, 'no');
+
+    // let the runtime catch up on what happened while we were blocked
+    // this avoids "connection closed before message completed"
+    await new Promise(ok => setTimeout(ok, 0));
+
     if (result !== 'yes') {
       log.warning(`User declined to perform provider edits`);
       return false;
