@@ -32,25 +32,31 @@ export class CrdSource implements DnsSource {
       const annotations = node.metadata?.annotations ?? {};
       const resourceKey = `crd/${namespace}/${name}`;
 
-      for (const rule of node.spec.endpoints) {
-        if (!rule.dnsName || !rule.recordType || !rule.targets?.length) continue;
+      for (const endp of node.spec.endpoints) {
+        if (!endp.dnsName || !endp.recordType || !endp.targets?.length) continue;
 
-        if (rule.providerSpecific?.length) {
-          log.warning(`WARN: CRD 'providerSpecific' field is not currently used by dns-sync`);
+        const endpointAnnotations = { ...annotations };
+        // "provider specific" maps directly to annotations
+        // e.g. to set cloudflare-proxied:
+        // https://github.com/kubernetes-sigs/external-dns/issues/2418#issuecomment-987587518
+        for (const entry of endp.providerSpecific ?? []) {
+          if (!entry.name || typeof entry.value !== 'string') continue;
+          endpointAnnotations[entry.name] = entry.value;
         }
-        if (Object.keys(rule.labels ?? {}).length) {
+
+        if (Object.keys(endp.labels ?? {}).length) {
           log.warning(`WARN: CRD 'labels' field is not currently used by dns-sync`);
         }
 
         const records = new Array<PlainRecordData>();
 
-        for (const target of rule.targets) {
-          if (rule.recordType === 'TXT' && !target.startsWith('"')) {
+        for (const target of endp.targets) {
+          if (endp.recordType === 'TXT' && !target.startsWith('"')) {
             // If we get an unquoted TXT we treat it as a decoded value instead of rrdata
-            records.push({ type: rule.recordType, content: target });
+            records.push({ type: endp.recordType, content: target });
           } else {
             // Treat most things as rrdata, should do the trick
-            records.push(transformFromRrdata(rule.recordType as PlainRecordData['type'], target));
+            records.push(transformFromRrdata(endp.recordType as PlainRecordData['type'], target));
           }
         }
 
@@ -59,8 +65,8 @@ export class CrdSource implements DnsSource {
             resourceKey,
             annotations,
             dns: {
-              fqdn: rule.dnsName,
-              ttl: rule.recordTTL,
+              fqdn: endp.dnsName,
+              ttl: endp.recordTTL,
               ...record,
             }});
         }
