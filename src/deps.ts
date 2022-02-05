@@ -13,6 +13,7 @@ export {
 export type { Status, ObjectMeta } from "https://deno.land/x/kubernetes_apis@v0.3.2/builtin/meta@v1/structs.ts";
 export { CoreV1Api } from "https://deno.land/x/kubernetes_apis@v0.3.2/builtin/core@v1/mod.ts";
 export { NetworkingV1Api } from "https://deno.land/x/kubernetes_apis@v0.3.2/builtin/networking.k8s.io@v1/mod.ts";
+export type { Ingress } from "https://deno.land/x/kubernetes_apis@v0.3.2/builtin/networking.k8s.io@v1/mod.ts";
 export { AcmeCertManagerIoV1Api } from "https://deno.land/x/kubernetes_apis@v0.3.2/cert-manager/acme.cert-manager.io@v1/mod.ts";
 export { ExternaldnsV1alpha1Api } from "https://deno.land/x/kubernetes_apis@v0.3.2/external-dns/externaldns.k8s.io@v1alpha1/mod.ts";
 

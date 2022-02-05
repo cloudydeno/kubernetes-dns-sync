@@ -184,6 +184,8 @@ which can still use `networking.k8s.io/v1beta1` (added in Kubernetes v1.14).
 
 Allows specifying highly custom records via the CRD from the `external-dns` project.
 
+The CRD's manifest [can be found upstream](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/contributing/crd-source/crd-manifest.yaml). Create this CRD in your cluster before enabling the `crd` source in your configuration.
+
 ```toml
 [[source]]
 type = "crd"
@@ -215,21 +217,25 @@ the `Challenge` should get presented anyway and allow the `Order` to succeed.
 
 ### `node`
 
-I'm using this source to give each Node an Internet name.
-This is essentially a Kubernetes-based Dynamic DNS arrangement.
+This
 
-In theory you can also use this for round robins,
-but if you're hosting HTTP, the ingress source is probably what you want instead.
+This is effectively a Kubernetes-based Dynamic DNS arrangement.
+I'm using this source to give each Node an Internet name.
+
+In theory you can also use this for hosting round-robin endpoints,
+but if you're serving HTTP, the ingress source is probably what you want instead.
 
 ```toml
 [[source]]
 type = "node"
-address_type = "ExternalIP"
+# required: a FQDN pattern for each node
+# If an "index" interpolation doesn't match, that node is skipped
 fqdn_template = "{{index .Labels \"kubernetes.io/hostname\"}}.pet.devmode.cloud"
+address_type = "ExternalIP"
 annotation_filter = { "kubernetes.io/node.class" = "pet" }
 ```
 
-NOTE: The only interpolation currently allowed in `fqdn_template` is `{{ index .Labels .... }}`
+NOTE: The only interpolation currently allowed in `fqdn_template` is `{{ index .Labels "..." }}`
 
 ## Why?
 

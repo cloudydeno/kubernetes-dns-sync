@@ -2,8 +2,9 @@ import { ExternaldnsV1alpha1Api, KubernetesClient, log } from '../deps.ts';
 
 import type { CrdSourceConfig } from "../defs/config.ts";
 import type { DnsSource, SourceRecord, PlainRecordData } from "../defs/types.ts";
-import { WatchLister } from "../lib/watch-lister.ts";
+
 import { transformFromRrdata } from "../lib/dns-rrdata.ts";
+import { KubernetesLister } from "../lib/kubernetes-lister.ts";
 
 export class CrdSource implements DnsSource {
 
@@ -15,17 +16,20 @@ export class CrdSource implements DnsSource {
   }
   crdApi: ExternaldnsV1alpha1Api;
 
-  watchLister = new WatchLister('CRD',
+  lister = new KubernetesLister('DNS CRD',
     opts => this.crdApi.getDNSEndpointListForAllNamespaces({ ...opts }),
     opts => this.crdApi.watchDNSEndpointListForAllNamespaces({ ...opts }),
-    crd => [crd.metadata?.annotations, crd.spec]);
+    {
+      annotationFilter: () => this.config.annotation_filter ?? {},
+      changeDetectionKeys: res => [res.spec?.endpoints],
+    });
 
   #finalizers = new Map<string, () => Promise<unknown>>();
 
   async ListRecords() {
     const endpoints = new Array<SourceRecord>();
 
-    for await (const node of this.watchLister.getFreshList(this.config.annotation_filter)) {
+    for await (const node of this.lister.getFreshList()) {
       const {name, namespace, generation} = node.metadata ?? {};
       if (!name || !namespace || !node.spec?.endpoints) continue;
 
@@ -72,8 +76,7 @@ export class CrdSource implements DnsSource {
         }
       }
 
-      // mark in status subresource that we saw the record
-      // TODO: this probably shouldn't be done until we made the change
+      // Hook a finalizer to mark in the status subresource that we saw the resource
       if (generation && node.status?.observedGeneration !== generation) {
         this.#finalizers.set(resourceKey, () => this.crdApi
           .namespace(namespace)
@@ -98,7 +101,6 @@ export class CrdSource implements DnsSource {
   }
 
   MakeEventSource() {
-    return this.watchLister.getEventSource();
+    return this.lister.getEventSource();
   }
-
 }

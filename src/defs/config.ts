@@ -31,7 +31,7 @@ export interface SourceConfigBase {
 }
 export interface IngressSourceConfig extends SourceConfigBase {
   type: "ingress";
-  // TODO: ingress class filtering
+  ingress_class_names?: Array<string>;
 }
 export interface CrdSourceConfig extends SourceConfigBase {
   type: "crd";

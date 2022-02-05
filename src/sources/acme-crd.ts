@@ -2,7 +2,8 @@ import { AcmeCertManagerIoV1Api, KubernetesClient, log } from '../deps.ts';
 
 import type { AcmeCrdSourceConfig } from "../defs/config.ts";
 import type { DnsSource, SourceRecord } from "../defs/types.ts";
-import { WatchLister } from "../lib/watch-lister.ts";
+
+import { KubernetesLister } from "../lib/kubernetes-lister.ts";
 
 /**
  * Special source built specifically for cert-manager's ACME CRDs.
@@ -20,27 +21,27 @@ export class AcmeCrdSource implements DnsSource {
   }
   crdApi: AcmeCertManagerIoV1Api;
 
-  watchLister = new WatchLister('ACME CRD',
+  lister = new KubernetesLister('ACME CRD',
     opts => this.crdApi.getChallengeListForAllNamespaces({ ...opts }),
     opts => this.crdApi.watchChallengeListForAllNamespaces({ ...opts }),
-    crd => [crd.metadata?.annotations, crd.spec]);
+    {
+      annotationFilter: () => this.config.annotation_filter ?? {},
+      resourceFilter: res => res.spec.solver.dns01?.webhook?.solverName === 'kubernetes-dns-sync',
+      changeDetectionKeys: res => [res.spec.key, res.spec.dnsName, res.spec.wildcard],
+    });
 
   #finalizers = new Map<string, () => Promise<unknown>>();
 
   async ListRecords() {
     const endpoints = new Array<SourceRecord>();
 
-    for await (const challenge of this.watchLister.getFreshList(this.config.annotation_filter)) {
+    for await (const challenge of this.lister.getFreshList()) {
       const {name, namespace, annotations} = challenge.metadata;
       if (!name || !namespace) continue;
-
-      const {key, dnsName, solver, wildcard} = challenge.spec;
-      if (!key || !dnsName) continue;
-
-      // How we know which Challenges are for us...
-      if (solver.dns01?.webhook?.solverName !== 'kubernetes-dns-sync') continue;
-
       const resourceKey = `acme/${namespace}/${name}`;
+
+      const {key, dnsName, wildcard} = challenge.spec;
+      if (!key || !dnsName) continue;
 
       // Require extra config to allow wildcard domains
       if (wildcard && this.config.allow_wildcards == false) {
@@ -48,7 +49,7 @@ export class AcmeCrdSource implements DnsSource {
         continue;
       }
 
-      // TODO: this shouldn't be done until we made the change
+      // Hook a status update as a dns-sync finalizer
       if (challenge.status?.state == 'pending' && challenge.status?.processing && !challenge.status?.presented) {
         challenge.status.presented = true;
         challenge.status.reason = 'kubernetes-dns-sync accepted record';
@@ -81,7 +82,6 @@ export class AcmeCrdSource implements DnsSource {
   }
 
   MakeEventSource() {
-    return this.watchLister.getEventSource();
+    return this.lister.getEventSource();
   }
-
 }
