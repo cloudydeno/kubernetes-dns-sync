@@ -1,12 +1,12 @@
 import { AwsApiFactory, log, r53 } from "../../deps.ts";
 
-import type { Route53ProviderConfig } from "../../config.ts";
+import type { Route53ProviderConfig } from "../../defs/config.ts";
 import type {
   BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState,
-} from "../../types.ts";
+} from "../../defs/types.ts";
 
-import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
-import { transformFromRrdata, transformToRrdata } from "../../dns-logic/rrdata.ts";
+import { enrichSourceRecord, getPlainRecordKey } from "../../lib/dns-endpoints.ts";
+import { transformFromRrdata, transformToRrdata } from "../../lib/dns-rrdata.ts";
 
 export type Route53Record = BaseRecord & {
   rrset?: r53.ResourceRecordSet;
