@@ -16,6 +16,9 @@ export { NetworkingV1Api } from "https://deno.land/x/kubernetes_apis@v0.3.2/buil
 export { AcmeCertManagerIoV1Api } from "https://deno.land/x/kubernetes_apis@v0.3.2/cert-manager/acme.cert-manager.io@v1/mod.ts";
 export { ExternaldnsV1alpha1Api } from "https://deno.land/x/kubernetes_apis@v0.3.2/external-dns/externaldns.k8s.io@v1alpha1/mod.ts";
 
+export { ApiFactory as AwsApiFactory } from "https://deno.land/x/aws_api@v0.6.0/client/mod.ts";
+export * as r53 from "https://aws-api.deno.dev/v0.3/services/route53.ts?actions=ListHostedZones,ListResourceRecordSets,ChangeResourceRecordSets,GetChange";
+
 // from https://github.com/cloudydeno/deno-bitesized :
 export {
   ServiceAccount,

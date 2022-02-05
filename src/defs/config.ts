@@ -63,6 +63,14 @@ export interface CloudflareProviderConfig {
   // This filters the list of zones that was found
   domain_filter?: string[];
 }
+export interface Route53ProviderConfig {
+  type: "route53";
+  // route53 is a global service, in us-east-1, but it's configurable here anyway
+  region?: string;
+  // These filter the list of zones that was found
+  zone_id_filter?: string[];
+  domain_filter?: string[];
+}
 export interface GoogleProviderConfig {
   type: "google";
   project_id?: string;
@@ -84,6 +92,7 @@ export interface PowerDnsProviderConfig {
 export type ProviderConfig =
 | CloudflareProviderConfig
 | GoogleProviderConfig
+| Route53ProviderConfig
 | VultrProviderConfig
 | PowerDnsProviderConfig
 ;

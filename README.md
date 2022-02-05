@@ -32,16 +32,16 @@ All sources can be configured with their own `annotation_filter`.
 
 ### Supported DNS providers
 
-* [Cloudflare](https://www.cloudflare.com/dns/)
-* [Vultr: "The Infrastructure Cloud"](https://www.vultr.com/)
-* [Google Cloud DNS](https://cloud.google.com/dns)
-* [PowerDNS](https://github.com/PowerDNS/pdns)
+* [Cloudflare](https://www.cloudflare.com/dns/) (beta stage)
+* [Vultr: "The Infrastructure Cloud"](https://www.vultr.com/) (stable stage)
+* [Amazon Route53](https://aws.amazon.com/route53/) (beta stage)
+* [Google Cloud DNS](https://cloud.google.com/dns) (stable stage)
+* [PowerDNS](https://github.com/PowerDNS/pdns) (beta stage)
 
-I'd be open to adding and/or merging a couple others - in particular
-AWS Route53,
+I'd be open to adding and/or merging more providers (such as
 Namecheap,
 Gandi,
-etc. but for my needs having one or two providers is plenty.
+etc). Just file a ticket with a link to the API and I'll evaluate it.
 
 ## Options
 
@@ -98,6 +98,22 @@ If the annotation is present, proxying will be configured
 based on the annotation value being equal to the string `"true"`.
 If the annotation is not present then the default value will be used from the config.
 If the configuration doesn't have a value then the default is `false`.
+
+### Amazon `route53`
+Auth is handled from the environment
+(via environment variables, EC2 instance metadata, or Kubernetes IRSA).
+
+```toml
+[[provider]]
+type = "route53"
+
+### These filter the list of zones that was found
+# zone_id_filter = ["058..etc..90q"]
+# domain_filter = ["danopia.net"]
+
+### Route53 is a 'global' service, so you shouldn't need this:
+# region = "us-east-1"
+```
 
 ### `vultr`
 Generate an API Token
