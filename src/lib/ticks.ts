@@ -1,7 +1,7 @@
 import { ows } from '../deps.ts';
 
-import type { ControllerConfig } from "../config.ts";
-import type { DnsSource } from "../types.ts";
+import type { ControllerConfig } from "../defs/config.ts";
+import type { DnsSource } from "../defs/types.ts";
 
 /**
  * Builds a stream of one or more 'ticks', which are events that

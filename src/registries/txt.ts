@@ -1,7 +1,7 @@
 import { log, SetUtil } from "../deps.ts";
 
-import type { TxtRegistryConfig } from "../config.ts";
-import type { DnsRegistry, ZoneState, BaseRecord, SourceRecord } from "../types.ts";
+import type { TxtRegistryConfig } from "../defs/config.ts";
+import type { DnsRegistry, ZoneState, BaseRecord, SourceRecord } from "../defs/types.ts";
 
 /** Manages record ownership in-band with regular TXT records */
 export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinput> {

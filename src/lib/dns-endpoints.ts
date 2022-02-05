@@ -3,7 +3,7 @@ import { log } from "../deps.ts";
 import type {
   PlainRecord, PlainRecordAddress,
   BaseRecord, SourceRecord,
- } from "../types.ts";
+ } from "../defs/types.ts";
 
 export const AllSupportedRecords: Record<PlainRecord['type'], true> = {
   'A': true,

@@ -1,4 +1,4 @@
-import type { ProviderConfig } from "../config.ts";
+import type { ProviderConfig } from "../defs/config.ts";
 import { CloudflareProvider } from "./cloudflare/mod.ts";
 import { GoogleProvider } from "./google/mod.ts";
 import { PowerDnsProvider } from "./powerdns/mod.ts";
@@ -18,6 +18,6 @@ export function configureProvider(config: ProviderConfig) {
     case 'powerdns':
       return new PowerDnsProvider(config);
     default:
-      throw new Error(`Invalid provider 'type' ${(config as any).type}`);
+      throw new Error(`Invalid provider 'type' ${(config as ProviderConfig).type}`);
   }
 };

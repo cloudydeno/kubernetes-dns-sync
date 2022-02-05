@@ -1,4 +1,4 @@
-import type { RegistryConfig } from "../config.ts";
+import type { RegistryConfig } from "../defs/config.ts";
 import { mockedVultrTest } from "./vultr-mock.ts";
 
 const defaultRegistry: RegistryConfig = {

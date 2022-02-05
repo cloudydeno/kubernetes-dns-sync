@@ -42,9 +42,9 @@ jobs:
         key: deno-https/v1-${{ github.sha }}
         restore-keys: deno-https/v1-
 
-    - name: Check src/controller/mod.ts
+    - name: Check src/main.ts
       if: always()
-      run: time deno cache src/controller/mod.ts
+      run: time deno cache src/main.ts
 
     - name: Run test suite
       if: always()

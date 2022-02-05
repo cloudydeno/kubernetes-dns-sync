@@ -1,8 +1,8 @@
 import { AcmeCertManagerIoV1Api, KubernetesClient, log } from '../deps.ts';
 
-import type { AcmeCrdSourceConfig } from "../config.ts";
-import type { DnsSource, SourceRecord } from "../types.ts";
-import { WatchLister } from "./lib/watch-lister.ts";
+import type { AcmeCrdSourceConfig } from "../defs/config.ts";
+import type { DnsSource, SourceRecord } from "../defs/types.ts";
+import { WatchLister } from "../lib/watch-lister.ts";
 
 /**
  * Special source built specifically for cert-manager's ACME CRDs.

@@ -1,6 +1,6 @@
 import { log } from "../../deps.ts";
 
-import { JsonClient } from "../json-client.ts";
+import { JsonClient } from "../../lib/json-client.ts";
 
 export class PowerDnsApi extends JsonClient {
 

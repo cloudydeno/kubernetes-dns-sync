@@ -1,4 +1,4 @@
-import type { RegistryConfig } from "../config.ts";
+import type { RegistryConfig } from "../defs/config.ts";
 import { NoopRegistry } from "./noop.ts";
 import { TxtRegistry } from "./txt.ts";
 
@@ -9,6 +9,6 @@ export function configureRegistry(config: RegistryConfig) {
     case 'noop':
       return new NoopRegistry(config);
     default:
-      throw new Error(`Invalid registry 'type' ${(config as any).type}`);
+      throw new Error(`Invalid registry 'type' ${(config as RegistryConfig).type}`);
   }
 };

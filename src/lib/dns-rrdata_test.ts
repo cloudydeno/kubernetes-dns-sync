@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
 
-import { readTxtValue } from "./rrdata.ts";
+import { readTxtValue } from "./dns-rrdata.ts";
 
 Deno.test('rrdata: txt 1', () => {
   assertEquals(readTxtValue('hello world'), 'helloworld');
