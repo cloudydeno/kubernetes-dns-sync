@@ -1,5 +1,5 @@
-import type { RegistryConfig, VultrProviderConfig } from "../config.ts";
-import type { SourceRecord } from "../types.ts";
+import type { RegistryConfig, VultrProviderConfig } from "../defs/config.ts";
+import type { SourceRecord } from "../defs/types.ts";
 
 import { VultrApiMock } from "../providers/vultr/mock.ts";
 import { VultrProvider } from "../providers/vultr/mod.ts";

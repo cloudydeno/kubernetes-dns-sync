@@ -1,10 +1,10 @@
-import type { GoogleProviderConfig } from "../../config.ts";
+import type { GoogleProviderConfig } from "../../defs/config.ts";
 import type {
   BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState,
-} from "../../types.ts";
+} from "../../defs/types.ts";
 
-import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
-import { transformFromRrdata, transformToRrdata } from "../../dns-logic/rrdata.ts";
+import { enrichSourceRecord, getPlainRecordKey } from "../../lib/dns-endpoints.ts";
+import { transformFromRrdata, transformToRrdata } from "../../lib/dns-rrdata.ts";
 
 import { GoogleCloudDnsApi, Schema$Change, Schema$ResourceRecordSet } from "./api.ts";
 import { log } from "../../deps.ts";

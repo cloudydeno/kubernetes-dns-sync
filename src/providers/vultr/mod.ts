@@ -1,10 +1,10 @@
-import type { VultrProviderConfig } from "../../config.ts";
+import type { VultrProviderConfig } from "../../defs/config.ts";
 import type {
   BaseRecord, DnsProvider, Zone, SourceRecord, ZoneState, PlainRecord,
-} from "../../types.ts";
+} from "../../defs/types.ts";
 
-import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
-import { readTxtValue } from "../../dns-logic/rrdata.ts";
+import { enrichSourceRecord, getPlainRecordKey } from "../../lib/dns-endpoints.ts";
+import { readTxtValue } from "../../lib/dns-rrdata.ts";
 
 import { DnsRecord, DnsRecordData, VultrApi, VultrApiSurface } from "./api.ts";
 import { log } from "../../deps.ts";

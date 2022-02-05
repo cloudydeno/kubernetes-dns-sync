@@ -1,12 +1,12 @@
 import { log } from "../../deps.ts";
 
-import type { CloudflareProviderConfig } from "../../config.ts";
+import type { CloudflareProviderConfig } from "../../defs/config.ts";
 import type {
   BaseRecord, DnsProvider, PlainRecord, SourceRecord, Zone, ZoneState,
-} from "../../types.ts";
+} from "../../defs/types.ts";
 
-import { enrichSourceRecord, getPlainRecordKey } from "../../dns-logic/endpoints.ts";
-import { readTxtValue } from "../../dns-logic/rrdata.ts";
+import { enrichSourceRecord, getPlainRecordKey } from "../../lib/dns-endpoints.ts";
+import { readTxtValue } from "../../lib/dns-rrdata.ts";
 import { CloudflareApi, CloudflareApiSurface, DnsRecord, DnsRecordData } from "./api.ts";
 
 export const ProxiedAnnotation = `external-dns.alpha.kubernetes.io/cloudflare-proxied`;

@@ -1,6 +1,7 @@
 export interface DnsProvider<
 	Trecord extends BaseRecord,
 > {
+	config: {type: string};
 	ListZones(): Promise<Array<Zone>>;
 	ListRecords(zone: Zone): Promise<Array<Trecord>>;
 	ApplyChanges(state: ZoneState<Trecord>): Promise<void>;
@@ -22,6 +23,7 @@ export interface DnsSource {
 export interface DnsRegistry<
 	Tsource extends BaseRecord,
 > {
+	config: {type: string};
 	/** Fills in the 'Desired' field of the ZoneState */
 	ApplyDesiredRecords(state: ZoneState<Tsource>, desired: Array<SourceRecord>, enricher: (record: SourceRecord) => Tsource | null): void | Promise<void>;
 }

@@ -1,5 +1,5 @@
-import type { NoopRegistryConfig } from "../config.ts";
-import type { BaseRecord, DnsRegistry, ZoneState, SourceRecord } from "../types.ts";
+import type { NoopRegistryConfig } from "../defs/config.ts";
+import type { BaseRecord, DnsRegistry, ZoneState, SourceRecord } from "../defs/types.ts";
 
 const ZoneCriticalTypes = new Set(['SOA', 'NS']);
 

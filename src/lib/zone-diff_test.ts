@@ -1,8 +1,8 @@
 import { assertEquals, assertObjectMatch } from "https://deno.land/std@0.115.0/testing/asserts.ts";
 
-import type { Zone, BaseRecord } from "../types.ts";
-import { buildDiff } from "./diff.ts";
-import { getPlainRecordKey } from "./endpoints.ts";
+import type { Zone, BaseRecord } from "../defs/types.ts";
+import { buildDiff } from "./zone-diff.ts";
+import { getPlainRecordKey } from "./dns-endpoints.ts";
 
 const exampleZone: Zone = {
   fqdn: "example.com",

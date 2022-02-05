@@ -1,4 +1,4 @@
-import { JsonClient } from "../json-client.ts";
+import { JsonClient } from "../../lib/json-client.ts";
 
 export interface CloudflareApiSurface {
   listAllZones(accountId?: string): AsyncGenerator<CloudflareZone>;
