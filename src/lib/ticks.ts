@@ -19,23 +19,23 @@ export function createTickStream(
   config: ControllerConfig,
   sources: DnsSource[],
 ) {
-  const tickStreams = new Array<ReadableStream<DnsSource | null>>();
+  const tickStreams = new Array<ReadableStream<string>>();
 
   // Always start with one tick as startup
-  tickStreams.push(ows.just(null));
+  tickStreams.push(ows.just('startup'));
 
   if (Deno.args.includes('--once')) { // one run only
 
     // Add nothing else
     // Loop completes after initial tick.
 
-  } else if (config.enable_watching) { // Watch + interval
+  } else if (!config.disable_watching) { // Watch + interval
 
     // Subscribe to every source's events
     for (const source of sources) {
       tickStreams.push(ows.fromIterable(source
         .MakeEventSource())
-        .pipeThrough(ows.map(() => source)));
+        .pipeThrough(ows.map(() => source.config.type)));
     }
 
     // Also regular infrequent ticks just in case
@@ -57,5 +57,5 @@ export function createTickStream(
 function makeTimer(intervalSeconds: number) {
   return ows.fromTimer(intervalSeconds * 1000)
       // kludge to match the type signature
-      .pipeThrough(ows.map(() => null));
+      .pipeThrough(ows.map(() => 'schedule'));
 }

@@ -6,6 +6,7 @@
 [deno-vis]: https://deno-visualizer.danopia.net/dependencies-of/https/raw.githubusercontent.com/cloudydeno/kubernetes-dns-sync/main/src/main.ts?rankdir=LR
 
 An `external-dns`-like project, with a wider scope for managing DNS records.
+Targets small-to-medium Kubernetes clusters.
 Written in Typescript.
 
 ## Work In Progress!!
@@ -101,6 +102,32 @@ The default behavior
 (if neither `--dry-run` nor `--yes` are supplied)
 is to print the planned changes and
 interactively ask the user before applying them.
+
+## Configuration file
+
+A `config.toml` file is currently used to configure sources and providers, and also a TXT registry.
+The below sections include TOML snippits to append to your configuration file to enable each integration.
+
+There are also a couple top-level options which you can add at the top of the file.
+These concern the timing of the syncronization loop:
+
+```toml
+# How often to start a sync even if nothing has visibly changed from a Source.
+# This interval is useful for fixing any accidental changes on the Provider side.
+# Defaults to 1 hour, or 1 minute if watching is disabled.
+interval_seconds = 60
+
+# Minimum time between event-triggered syncs.
+# This helps deduplicate a batch update (a `kubectl apply` of multiple Ingresses).
+# Defaults to 2 seconds. A higher value probably makes sense in a noisy cluster.
+debounce_seconds = 2
+
+# If you want to disable watching completely,
+#   and only depend on `interval_seconds`, set this to true.
+# A fresh list of resources will be downloaded from the API Server on every iteration.
+# Possibly makes sense on super noisy clusters.
+disable_watching = false
+```
 
 ## Providers
 
@@ -199,6 +226,7 @@ alongside `kubernetes-dns-sync` for local development purposes.
 Set the `POWERDNS_API_KEY` envvar to authenticate.
 
 ```toml
+[[provider]]
 type = "powerdns"
 # api_endpoint = "http://localhost:8081/api/" # default
 # server_id = "localhost" # default

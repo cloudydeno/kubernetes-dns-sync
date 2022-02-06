@@ -18,8 +18,6 @@ dnsSync:
 
   # more examples: https://github.com/cloudydeno/kubernetes-dns-sync/tree/main/examples
   config: |
-    enable_watching = true
-
     # for demo's sake, no provider:
     provider = []
     # but you'll actually want to replace that with something more like:
@@ -29,11 +27,15 @@ dnsSync:
     [[source]]
     type = "ingress"
 
+    # if you have cert-manager, this source can present DNS01 challenges. see README
+    # [[source]]
+    # type = "acme-crd"
+
     [registry]
     type = "txt"
     # txt_prefix in case you want to manage CNAMEs or wildcards, or hide the TXTs
     txt_prefix = "_registry."
-    # txt_owner_id to be unique for each deployment managing records in the same zone
+    # txt_owner_id to be unique for each deployment managing records in the same DNS zone
     txt_owner_id = "example"
 
 image:

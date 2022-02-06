@@ -2,9 +2,9 @@ import { KubernetesClient, NetworkingV1Api } from '../deps.ts';
 
 import type { IngressSourceConfig } from "../defs/config.ts";
 import type { DnsSource, SourceRecord, PlainRecordHostname } from "../defs/types.ts";
-import { WatchLister } from '../lib/watch-lister.ts';
 
 import { splitIntoV4andV6 } from "../lib/dns-endpoints.ts";
+import { KubernetesLister } from "../lib/kubernetes-lister.ts";
 
 export class IngressSource implements DnsSource {
 
@@ -16,15 +16,18 @@ export class IngressSource implements DnsSource {
   }
   networkingApi: NetworkingV1Api;
 
-  watchLister = new WatchLister('Ingress',
+  lister = new KubernetesLister('Ingress',
     opts => this.networkingApi.getIngressListForAllNamespaces({ ...opts }),
     opts => this.networkingApi.watchIngressListForAllNamespaces({ ...opts }),
-    ing => [ing.metadata?.annotations, ing.spec?.rules, ing.status?.loadBalancer?.ingress]);
+    {
+      annotationFilter: () => this.config.annotation_filter ?? {},
+      changeDetectionKeys: res => [res.spec?.rules, res.status?.loadBalancer?.ingress],
+    });
 
   async ListRecords() {
     const endpoints = new Array<SourceRecord>();
 
-    for await (const ingress of this.watchLister.getFreshList(this.config.annotation_filter)) {
+    for await (const ingress of this.lister.getFreshList()) {
       if (!ingress.metadata || !ingress.spec?.rules || !ingress.status?.loadBalancer?.ingress) continue;
 
       for (const rule of ingress.spec.rules) {
@@ -59,7 +62,6 @@ export class IngressSource implements DnsSource {
   }
 
   MakeEventSource() {
-    return this.watchLister.getEventSource();
+    return this.lister.getEventSource();
   }
-
 }
