@@ -1,13 +1,82 @@
 # kubernetes-dns-sync
 
-[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fdep-count%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fsrc%2Fcontroller%2Fmod.ts)][deno-vis]
-[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fupdates%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fsrc%2Fcontroller%2Fmod.ts)][deno-vis]
+[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fdep-count%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fsrc%2Fmain.ts)][deno-vis]
+[![Custom badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fdeno-visualizer.danopia.net%2Fshields%2Fupdates%2Fgh%2Fcloudydeno%2Fkubernetes-dns-sync%2Fsrc%2Fmain.ts)][deno-vis]
 
-[deno-vis]: https://deno-visualizer.danopia.net/dependencies-of/https/raw.githubusercontent.com/cloudydeno/kubernetes-dns-sync/main/src/controller/mod.ts?rankdir=LR
+[deno-vis]: https://deno-visualizer.danopia.net/dependencies-of/https/raw.githubusercontent.com/cloudydeno/kubernetes-dns-sync/main/src/main.ts?rankdir=LR
+
+An `external-dns`-like project, with a wider scope for managing DNS records.
+Written in Typescript.
 
 ## Work In Progress!!
 
-For rationale of creating my own external-dns-like project see the end of this README.
+I haven't started semantic versioning on this project yet.
+Only githash containers have been published so far.
+An initial versioned release will be made in the coming weeks.
+
+For rationale of creating my own DNS manager project, see the end of this README.
+
+## Supported functionality
+
+### DNS records by source:
+
+The types of DNS records that each source is able to emit.
+
+|         | acme-crd | crd | ingress | node |
+|---------|----------|-----|---------|------|
+| `A`     |          | ✅  | ✅      | ✅   |
+| `AAAA`  |          | ✅  | ✅      | ✅   |
+| `NS`    |          | ✅  |         |      |
+| `CNAME` |          | ✅  | ✅      |      |
+| `TXT`   | ✅       | ✅  |         |      |
+| `MX`    |          | ✅  |         |      |
+| `SOA`   |          | ✅  |         |      |
+| `SRV`   |          | ✅  |         |      |
+
+### DNS records by providers:
+
+Most providers support all of our managable record types.
+
+|         | cloudflare | google | powerdns | route53 | vultr |
+|---------|------------|--------|----------|---------|-------|
+| `A`     | ✅         | ✅     | ✅       | ✅      | ✅    |
+| `AAAA`  | ✅         | ✅     | ✅       | ✅      | ✅    |
+| `NS`    | ✅         | ✅     | ✅       | ✅      | ✅    |
+| `CNAME` | ✅         | ✅     | ✅       | ✅      | ✅    |
+| `TXT`   | ✅         | ✅     | ✅       | ✅      | ✅    |
+| `MX`    | ✅         | ✅     | ✅       | ✅      | ✅    |
+| `SOA`   | *          | ✅     | ✅       | ✅      | *     |
+| `SRV`   | ✅         | ✅     | ✅       | ✅      | ✅    |
+
+*: These providers do not expose the zone's SOA record for modification.
+
+### Record sources
+
+| Source type | Kubernetes Kind | Target APIVersion             | Primary usage |
+|-------------|-----------------|-------------------------------|---------------|
+| `ingress`   | `Ingress`       | `networking.k8s.io/v1`        | Serving HTTP traffic |
+| `crd`       | `DNSEndpoint`   | `externaldns.k8s.io/v1alpha1` | Managing arbitrary DNS records |
+| `acme-crd`  | `Challenge`     | `acme.cert-manager.io/v1`     | Solving DNS01 challenges |
+| `node`      | `Node`          | `v1`                          | 'Dynamic DNS' for your Nodes |
+
+See below sections for more info on each source.
+
+All sources can be configured with their own `annotation_filter`.
+
+### DNS providers
+
+| Provider type | Integration quality | Update strategy     | Integrates with |
+|---------------|---------------------|---------------------|-----------------|
+| `cloudflare`  | beta                | record-by-record    | [Cloudflare DNS](https://www.cloudflare.com/dns/) |
+| `vultr`       | stable              | record-by-record    | [Vultr: "The Infrastructure Cloud"](https://www.vultr.com/) |
+| `route53`     | beta                | atomic patches      | [Amazon Route53](https://aws.amazon.com/route53/) |
+| `google`      | stable              | atomic replacements | [Google Cloud DNS](https://cloud.google.com/dns) |
+| `powerdns`    | beta                | atomic patches      | [PowerDNS](https://github.com/PowerDNS/pdns) (self-hostable) |
+
+I'd be open to adding and/or merging more providers (such as
+Namecheap,
+Gandi,
+etc). Just file a ticket with a link to the API and I'll evaluate it.
 
 ### `external-dns` Compatability
 
@@ -17,38 +86,14 @@ The primary difference is that each record type is now explicitly registered/own
 This means that if a managed subdomain already has extra records such as `MX`,
 `kubernetes-dns-sync` will initially assume it is supposed to manage the extra records.
 
-This record type ownership is only a concern when there are existing `external-dns` records.
+This record type ownership is only a concern when inheriting `external-dns` registry records.
 
-### Supported record sources
-
-See below sections for more info on each source.
-
-* `ingress` for `networking.k8s.io/v1` `Ingress`
-* `crd` for `externaldns.k8s.io/v1alpha1` `DNSEndpoint`
-* `acme-crd` for `acme.cert-manager.io/v1` `Challenge`
-* `node` for `v1` `Node`
-
-All sources can be configured with their own `annotation_filter`.
-
-### Supported DNS providers
-
-* [Cloudflare](https://www.cloudflare.com/dns/) (beta stage)
-* [Vultr: "The Infrastructure Cloud"](https://www.vultr.com/) (stable stage)
-* [Amazon Route53](https://aws.amazon.com/route53/) (beta stage)
-* [Google Cloud DNS](https://cloud.google.com/dns) (stable stage)
-* [PowerDNS](https://github.com/PowerDNS/pdns) (beta stage)
-
-I'd be open to adding and/or merging more providers (such as
-Namecheap,
-Gandi,
-etc). Just file a ticket with a link to the API and I'll evaluate it.
-
-## Options
+## Command-line Flags
 
 * `--dry-run`: don't actually make any changes, only print them
 * `--yes`: commit changes to DNS provider APIs without asking
-* `--once`: one run only, exits when done
-* `--serve-metrics`: start an OpenMetrics/Prometheus server on port 9090
+* `--once`: one run only, the process exits when complete
+* `--serve-metrics`: start an OpenMetrics/Prometheus server with runtime metrics on port 9090
 * `--debug`: enable extra logging
 * `--log-as-json`: structured logging as JSON log lines
 
@@ -62,8 +107,8 @@ interactively ask the user before applying them.
 In general, providers require no extra configuration
 other than a token/credential via an environment variable.
 
-There's always at least one option available (`domain_filter`)
-for filtering which zones will be synced.
+There's always at least one option available
+for filtering which zones will be synced (usually `domain_filter`).
 
 ### `cloudflare`
 Generate a Cloudflare API Token (the "edit DNS" sample is perfect)
@@ -75,14 +120,14 @@ type = "cloudflare"
 
 ### Have traffic go through Cloudflare's CDN by default?
 ### This can also be set per-record with an Kubernetes annotation, see below
-proxied_by_default = true
-### If you want to have proxied *wildcards* and you pay for Cloudflare Enterprise:
+proxied_by_default = true # default: false
+### If you want to enable proxied *wildcards* and you pay for Cloudflare Enterprise:
 # allow_proxied_wildcards = false
 
-### These let you give specific IDs instead of finding what you can access
-# account_id = ["zjh..etc..aio"]
-# zone_id_filter = ["058..etc..90q"]
-### This filters the list of zones that was found
+### These let you give specific IDs instead of discovering what the API token can access
+# account_id = ["zjh[etc]aio"]
+# zone_id_filter = ["058[etc]90q"]
+### This filters the list of zones that was discovered
 # domain_filter = ["danopia.net"]
 ```
 
@@ -108,7 +153,7 @@ Auth is handled from the environment
 type = "route53"
 
 ### These filter the list of zones that was found
-# zone_id_filter = ["058..etc..90q"]
+# zone_id_filter = ["058[etc]90q"]
 # domain_filter = ["danopia.net"]
 
 ### Route53 is a 'global' service, so you shouldn't need this:
@@ -133,7 +178,7 @@ Vultr supports every dns-sync record type except `SOA`.
 For authentication, currently only the `GOOGLE_APPLICATION_CREDENTIALS` envvar is supported.
 It must contain a path to a JSON file containing a `"type":"service_account"` credential.
 The OAuth scopes `https://www.googleapis.com/auth/ndev.clouddns.{read,write}` will be used.
-If you want better auth, please ask :)
+If you want more flexible auth, please ask :)
 
 ```toml
 [[provider]]
@@ -171,38 +216,56 @@ especially if you have a split-horizon DNS configuration.
 ```toml
 [[source]]
 type = "ingress"
-annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
+
+### optional: Filter which resources we will manage records for
+# annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
 ```
 
 This project uses the `Ingress` kind from `networking.k8s.io/v1`,
 which was introduced in Kubernetes v1.19.
-If your cluster is older, consider upgrading,
-or perhaps try [an older snapshot](https://github.com/cloudydeno/kubernetes-dns-sync/tree/6b7cff80007fac8189d97bbaaade808a81fd01c3) of this project
-which can still use `networking.k8s.io/v1beta1` (added in Kubernetes v1.14).
+If your cluster is older, consider upgrading it.
 
 ### `crd`
 
 Allows specifying highly custom records via the CRD from the `external-dns` project.
 
-The CRD's manifest [can be found upstream](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/contributing/crd-source/crd-manifest.yaml). Create this CRD in your cluster before enabling the `crd` source in your configuration.
+To specify complex records such as `MX` or `SRV`, use the "rrdata" layout for that record type.
+For example, a `SRV` target in a CRD could be: `10 5 5223 server.example.com`.
+See [Google Cloud DNS docs](https://cloud.google.com/dns/docs/reference/json-record) for more examples.
+
+The CRD's manifest [can be found upstream](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/contributing/crd-source/crd-manifest.yaml).
+Create this CRD in your cluster before enabling the `crd` source in your configuration.
 
 ```toml
 [[source]]
 type = "crd"
+
+# annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
 ```
 
 ### `acme-crd`
 
 This source specifically targets cert-manager's v1 `Challenge` CRD.
+It presents ACME DNS01 Challenges without cert-manager having DNS provider details.
+
+The configuration includes several optional fields:
 
 ```toml
 [[source]]
 type = "acme-crd"
-challenge_ttl = 120
-allow_wildcards = true
+
+### Set a optional TTL on challenges.
+# challenge_ttl = 120
+
+### Whether to allow wildcard certificates.
+### Default `true`; set `false` to disallow
+# allow_wildcards = false
+
+### Note that this is matched to the annotations from the `Challenge` resource.
+# annotation_filter = { ... }
 ```
 
-To use, configure a cert-manager `Issuer` / `ClusterIssuer` with this dummy webhook solver:
+To use, create a cert-manager `Issuer` or `ClusterIssuer` with this dummy webhook solver:
 
 ```yaml
     solvers:
@@ -217,22 +280,27 @@ the `Challenge` should get presented anyway and allow the `Order` to succeed.
 
 ### `node`
 
-This
+This source requires a `fqdn_template` and uses it to compute DNS records
+for the different Nodes in the Kubernetes cluster.
 
-This is effectively a Kubernetes-based Dynamic DNS arrangement.
-I'm using this source to give each Node an Internet name.
+This is effectively a Kubernetes-based Dynamic DNS arrangement with `address_type = ExternalIP`.
+It's also possible to use `address_type = InternalIP` to build an internal DNS zone.
+If a node has multiple addresses of the desired type (e.g. dualstack IPv4/IPv6)
+then each address will be extracted into a DNS target.
 
 In theory you can also use this for hosting round-robin endpoints,
-but if you're serving HTTP, the ingress source is probably what you want instead.
+but if you're serving HTTP, the `ingress` source is probably what you want instead.
 
 ```toml
 [[source]]
 type = "node"
-# required: a FQDN pattern for each node
-# If an "index" interpolation doesn't match, that node is skipped
+
+### required: A FQDN pattern for each node
+### If an "index" interpolation doesn't match, that node is skipped
 fqdn_template = "{{index .Labels \"kubernetes.io/hostname\"}}.pet.devmode.cloud"
-address_type = "ExternalIP"
-annotation_filter = { "kubernetes.io/node.class" = "pet" }
+
+# address_type = "ExternalIP" # default. Or "InternalIP"
+# annotation_filter = { "kubernetes.io/node.class" = "workload" }
 ```
 
 NOTE: The only interpolation currently allowed in `fqdn_template` is `{{ index .Labels "..." }}`
@@ -247,25 +315,32 @@ I tried using `external-dns` for more serious DNS management (records for a whol
     1. external-dns can't be used to manage SPF even with the CRD source :(
 1. Lack of partial ownership - won't add A to the apex record if TXTs already exist there
 1. CRD source lacks event stream support
-1. CRD source doesn't have a field for priority / weight
 1. CRD source doesn't provide strong feedback in Status key
 1. Need to run multiple external-dns instances for multi-provider, differing annotation filters, etc
-    1. I'm up to 5 right now for split-horizon... Should only be 2
+    1. I was up to 5 for a split-horizon horizon... Should only be 2 at most
 1. Individual providers like Vultr can be quite behind
     1. Vultr provider entirely lacks multiple-target support (DNS round-robin)
     1. Vultr provider continuously updates on invalid TTL
-    1. Vultr is using v1 of their API and makes repetetitive calls; v2 is the latest API version now
+    1. At the time, vultr was using v1 of their API and making repetitive API calls; v2 is the latest API version
 
-After trying to refactor enough to support several of these needs, I decided to to my hand at a from-scratch replacement. Even if it doesn't work I'll hopefully learn why things are so hard to begin with.
+After trying to refactor enough to support several of these needs, I decided to to my hand at a from-scratch replacement.
+I ended up learning a fair bit of the related issues in the process.
+At this point
 
-I'm considering a few differences - such as allowing a DynamoDB table for ownership instead of TXT records - but overall the basic loop reflects how external-dns works. CRDs and heritage TXT records will stay compatible.
+Overall there are some shared ideas between the two projects.
+This project has a somewhat different design by now to enable a more flexible diff and registry system.
+The `DNSEndpoint` CRD is compatible, and heritage `TXT` records are similar,
+though this project's `TXT` registry keeps track of ownership on a per-recordtype level
+which may hinder cooperation if both projects are used on the same zone in parallel.
 
 ## Running functional tests
 Some provider tests actually communicate with a live API. These are not included in the default test suite.
 
-The individual functional tests can be launched directly:
+The individual functional tests can be launched directly from a shell:
 
 ```
 src/providers/vultr/functional-test.ts
 src/providers/powerdns/functional-test.ts
 ```
+
+All other tests will be found by a simple `deno test` invocation.
