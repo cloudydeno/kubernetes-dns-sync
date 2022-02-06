@@ -48,7 +48,7 @@ if (Deno.args.includes('--serve-metrics')) {
 for await (const tickSource of createTickStream(config, sources)) {
   console.log('');
   log.info(`Sync triggered at ${new Date().toISOString()
-    } by ${tickSource?.config.type ?? 'schedule'}`);
+    } by ${tickSource}`);
 
   await mainLoopIteration(sources, providers, registry);
 

@@ -1,7 +1,7 @@
 export interface ControllerConfig {
   interval_seconds?: number;
   debounce_seconds?: number;
-  enable_watching?: boolean;
+  disable_watching?: boolean;
 
   source: SourceConfig[];
   provider: ProviderConfig[];
