@@ -13,14 +13,23 @@ export class IngressSource implements DnsSource {
     private client: KubernetesClient,
   ) {
     this.networkingApi = new NetworkingV1Api(this.client);
+    this.ingressClasses = new Set(config.ingress_class_names ?? []);
   }
   networkingApi: NetworkingV1Api;
+  ingressClasses: Set<string>;
 
   lister = new KubernetesLister('Ingress',
     opts => this.networkingApi.getIngressListForAllNamespaces({ ...opts }),
     opts => this.networkingApi.watchIngressListForAllNamespaces({ ...opts }),
     {
       annotationFilter: () => this.config.annotation_filter ?? {},
+      resourceFilter: res => {
+        // Allow filtering by the special 'ingressClassName' field under 'spec'
+        // This is in addition to any given annotation_filter
+        if (this.ingressClasses.size == 0) return true;
+        if (!res.spec?.ingressClassName) return false;
+        return this.ingressClasses.has(res.spec.ingressClassName);
+      },
       changeDetectionKeys: res => [res.spec?.rules, res.status?.loadBalancer?.ingress],
     });
 

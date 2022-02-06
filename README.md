@@ -238,12 +238,21 @@ type = "powerdns"
 ### `ingress`
 
 The original. Furnishes DNS records for your `Ingress` resources.
-You'll probably want to set your ingress class as an Annotation Filter,
+You'll probably want to set a filter for your ingress class,
 especially if you have a split-horizon DNS configuration.
+
+Note that if both `ingress_class_names` and `annotation_filter` are set,
+each `Ingress` will need to match both filters to be considered.
+If you have a mix of ingress class styles,
+you could perhaps add two `ingress` sources,
+but it would be easier to make your resources consistent to one of the styles.
 
 ```toml
 [[source]]
 type = "ingress"
+
+### optional: Set a list of `ingressClassName` values to filter Ingresses by
+# ingress_class_names = [ "nginx" ]
 
 ### optional: Filter which resources we will manage records for
 # annotation_filter = { "kubernetes.io/ingress.class" = "nginx" }
