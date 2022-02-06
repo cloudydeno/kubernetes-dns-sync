@@ -28,6 +28,7 @@ export class NodeSource implements DnsSource {
 
   async ListRecords() {
     const endpoints = new Array<SourceRecord>();
+    const addressType = this.config.address_type || 'ExternalIP';
 
     for await (const node of this.lister.getFreshList()) {
       if (!node.metadata || !node.status?.addresses) continue;
@@ -46,7 +47,7 @@ export class NodeSource implements DnsSource {
       if (!successful) continue;
 
       const addresses = node.status.addresses
-        .filter(x => !this.config.address_type || x.type === this.config.address_type)
+        .filter(x => x.type === addressType)
         .map(x => x.address);
 
       for (const address of splitIntoV4andV6(addresses)) {
