@@ -7,4 +7,4 @@ RUN ["deno", "cache", "deps.ts"]
 ADD src/ ./
 RUN ["deno", "cache", "main.ts"]
 
-ENTRYPOINT ["deno", "run", "--unstable", "--allow-hrtime", "--allow-net", "--allow-read", "--allow-env", "--cached-only", "--no-check", "controller/mod.ts"]
+ENTRYPOINT ["deno", "run", "--unstable", "--allow-hrtime", "--allow-net", "--allow-read", "--allow-env", "--cached-only", "--no-check", "main.ts"]
