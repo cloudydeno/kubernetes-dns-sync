@@ -66,27 +66,44 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
       const existingOwnerships = ownershipRecords.filter(x => x.targetFqdn == fqdn);
 
       const desiredTypes = new Set<string>(ourRecords.map(x => x.dns.type).sort());
-      const allowedTypes = new Set<string>(desiredTypes);
+      const allowedTypes = new Set<string>();
       // const unregisteredTypes = new Set<string>();
 
       // Check what we already have registered - is it enough?
       const ourOwnership = existingOwnerships.find(x => x.isOurs);
       let areWeAdopting = false;
       if (ourOwnership) {
-        if (ourOwnership.targetTypes.size > 0) {
-          if (SetUtil.isSuperset(ourOwnership.targetTypes, desiredTypes)) {
-            // We are good!
-            // Make sure we pay attention to everything we're supposedly managing:
-            for (const type of ourOwnership.targetTypes) {
-              allowedTypes.add(type);
-            }
-          } else {
-            throw new Error(`TODO: our existing registration isn't wide enough`);
-          }
-        } else {
-          // We are good! But we'll update the registration with specific types.
+        // We have an ownership already
+        // Make sure we pay attention to everything we're supposedly managing:
+        for (const type of ourOwnership.targetTypes) {
+          allowedTypes.add(type);
         }
+        if (ourOwnership.targetTypes.size === 0) {
+          // If the ownership is being upgraded then let's fill in sane types
+          // The ones we don't care about will be removed
+          allowedTypes.add('A');
+          allowedTypes.add('AAAA');
+          allowedTypes.add('CNAME');
+        }
+        // We'll also update the registration with specific types if needed.
+
+        // Then check if we need to add anything else:
+        for (const missingType of SetUtil.difference(desiredTypes, allowedTypes)) {
+          // If we want something but records already exist, leave that type alone
+          for (const existingRecord of state.Existing) {
+            if (existingRecord.dns.type !== missingType) continue;
+            if (existingRecord.dns.fqdn !== fqdn) continue;
+            if (ownershipRecordMap.has(existingRecord)) continue;
+            allowedTypes.delete(existingRecord.dns.type);
+          }
+        }
+
       } else {
+        // Let's start by trying to own everything we would like
+        for (const type of desiredTypes) {
+          allowedTypes.add(type);
+        }
+
         // Check what is managed already
         for (const ownership of existingOwnerships) {
           if (ownership.targetTypes.size > 0) {
