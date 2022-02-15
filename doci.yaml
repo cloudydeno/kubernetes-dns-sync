@@ -6,6 +6,7 @@ dependencyLayers:
 
 runtimeFlags:
 - --unstable
+- --no-check
 - --allow-hrtime
 - --allow-net
 - --allow-read

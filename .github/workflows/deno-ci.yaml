@@ -91,11 +91,11 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - name: [DOCI] Build
+      - name: Build denodir
         run: doci pipeline build
-      - name: [DOCI] Push denodir image
+      - name: Push denodir image
         run: doci pipeline push ${{ steps.name.outputs.image }}-denodir
-      - name: [DOCI] Push alpine image
+      - name: Push alpine image
         run: doci pipeline push ${{ steps.name.outputs.image }}-alpine --eject alpine
-      - name: [DOCI] Push multiarch image
+      - name: Push multiarch image
         run: doci pipeline push ${{ steps.name.outputs.image }}-multiarch --eject multiarch
