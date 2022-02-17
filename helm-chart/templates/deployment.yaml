@@ -67,7 +67,7 @@ spec:
           {{- end }}
           volumeMounts:
             - name: cfgmap
-              mountPath: /src/kubernetes-dns-sync/config.toml
+              mountPath: /config.toml
               subPath: config.toml
           {{- with .Values.dnsSync.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
