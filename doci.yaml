@@ -1,0 +1,19 @@
+entrypoint:
+  specifier: src/main.ts
+
+dependencyLayers:
+- specifier: src/deps.ts
+
+runtimeFlags:
+- --unstable
+- --no-check
+- --allow-hrtime
+- --allow-net
+- --allow-read
+- --allow-env
+
+ejections:
+  alpine:
+    base: denoland/deno:alpine-1.18.2
+  multiarch:
+    base: lukechannings/deno:v1.18.2
