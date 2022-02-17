@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ denodir-oci ]
+    branches: [ main ]
     tags: [ v* ]
     paths-ignore:
       - 'helm-chart/**'
@@ -21,6 +21,7 @@ jobs:
         deno-version:
         # v1.17 and earlier lack Intl.ListFormat type
         - v1.18
+        - v1.19
         - canary
       fail-fast: false # run each branch to completion
 
