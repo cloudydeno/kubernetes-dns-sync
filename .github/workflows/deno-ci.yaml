@@ -22,6 +22,7 @@ jobs:
         # v1.17 and earlier lack Intl.ListFormat type
         - v1.18
         - v1.19
+        - v1.20
         - canary
       fail-fast: false # run each branch to completion
 
