@@ -22,7 +22,7 @@ export * as r53 from "https://aws-api.deno.dev/v0.4/services/route53.ts?actions=
 // from https://github.com/cloudydeno/deno-bitesized :
 export {
   ServiceAccount,
-} from "https://crux.land/4sUPbm#google-service-account";
+} from "https://crux.land/6DifM5#google-service-account";
 export * as SetUtil from "https://crux.land/4y3NGo#set-util";
 
 export { runMetricsServer } from "https://deno.land/x/observability@v0.1.2/sinks/openmetrics/server.ts";
