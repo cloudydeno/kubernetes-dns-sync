@@ -98,8 +98,8 @@ jobs:
       - name: Build denodir
         run: doci pipeline build
       # - name: Push denodir image
-      #   run: doci pipeline push ${{ steps.name.outputs.image }}-denodir:${{ steps.name.outputs.tag }}
+      #   run: doci pipeline push --tag ${{ steps.name.outputs.tag }} --target denodir
       - name: Push alpine image
-        run: doci pipeline push ${{ steps.name.outputs.image }}-alpine:${{ steps.name.outputs.tag }} --eject alpine
+        run: doci pipeline push --tag ${{ steps.name.outputs.tag }} --target alpine
       - name: Push multiarch image
-        run: doci pipeline push ${{ steps.name.outputs.image }}-multiarch:${{ steps.name.outputs.tag }} --eject multiarch
+        run: doci pipeline push --tag ${{ steps.name.outputs.tag }} --target multiarch

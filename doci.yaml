@@ -13,8 +13,10 @@ runtimeFlags:
 - --allow-read
 - --allow-env
 
-ejections:
+targets:
   alpine:
-    base: denoland/deno:alpine-$DenoVersion
+    ref: ghcr.io/cloudydeno/dns-sync-alpine
+    baseRef: denoland/deno:alpine-$DenoVersion
   multiarch:
-    base: lukechannings/deno:v$DenoVersion
+    ref: ghcr.io/cloudydeno/dns-sync-multiarch
+    baseRef: lukechannings/deno:v$DenoVersion
