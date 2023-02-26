@@ -19,10 +19,9 @@ jobs:
     strategy:
       matrix:
         deno-version:
-        # v1.17 and earlier lack Intl.ListFormat type
-        - v1.18
-        - v1.19
         - v1.20
+        - v1.25
+        - v1.30
         - canary
       fail-fast: false # run each branch to completion
 
@@ -63,6 +62,8 @@ jobs:
     steps:
       - name: Use Deno stable
         uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.30
       - name: Cache https://
         uses: actions/cache@v3
         with:

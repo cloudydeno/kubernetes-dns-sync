@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.115.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.177.0/testing/asserts.ts";
 
 import { splitIntoV4andV6 } from "./dns-endpoints.ts";
 

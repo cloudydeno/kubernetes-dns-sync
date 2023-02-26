@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno test --allow-env --allow-net=api.vultr.com
 
-import { assertEquals, assertObjectMatch } from "https://deno.land/std@0.105.0/testing/asserts.ts";
+import { assertEquals, assertObjectMatch } from "https://deno.land/std@0.177.0/testing/asserts.ts";
 import { applyToProvider } from "../../integration-tests/apply.ts";
 import { NoopRegistry } from "../../registries/noop.ts";
 import { VultrProvider } from "./mod.ts";

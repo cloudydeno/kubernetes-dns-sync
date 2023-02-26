@@ -1,4 +1,4 @@
-import { assertEquals, assertObjectMatch } from "https://deno.land/std@0.115.0/testing/asserts.ts";
+import { assertEquals, assertObjectMatch } from "https://deno.land/std@0.177.0/testing/asserts.ts";
 
 import type { Zone, BaseRecord } from "../defs/types.ts";
 import { buildDiff } from "./zone-diff.ts";
