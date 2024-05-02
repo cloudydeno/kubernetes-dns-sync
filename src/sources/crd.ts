@@ -29,14 +29,14 @@ export class CrdSource implements DnsSource {
   async ListRecords() {
     const endpoints = new Array<SourceRecord>();
 
-    for await (const node of this.lister.getFreshList()) {
-      const {name, namespace, generation} = node.metadata ?? {};
-      if (!name || !namespace || !node.spec?.endpoints) continue;
+    for await (const resource of this.lister.getFreshList()) {
+      const {name, namespace, generation} = resource.metadata ?? {};
+      if (!name || !namespace || !resource.spec?.endpoints) continue;
 
-      const annotations = node.metadata?.annotations ?? {};
+      const annotations = resource.metadata?.annotations ?? {};
       const resourceKey = `crd/${namespace}/${name}`;
 
-      for (const endp of node.spec.endpoints) {
+      for (const endp of resource.spec.endpoints) {
         if (!endp.dnsName || !endp.recordType || !endp.targets?.length) continue;
 
         const endpointAnnotations = { ...annotations };
@@ -77,13 +77,12 @@ export class CrdSource implements DnsSource {
       }
 
       // Hook a finalizer to mark in the status subresource that we saw the resource
-      if (generation && node.status?.observedGeneration !== generation) {
+      if (generation && resource.status?.observedGeneration !== generation) {
+        resource.status ??= {};
+        resource.status.observedGeneration = generation;
         this.#finalizers.set(resourceKey, () => this.crdApi
           .namespace(namespace)
-          .replaceDNSEndpointStatus(name, {
-            status: {
-              observedGeneration: generation,
-            }})
+          .replaceDNSEndpointStatus(name, resource)
           .catch(err => log.warning(`Failed to observe DNSEndpoint CRD: ${err.message}`)));
       }
 
