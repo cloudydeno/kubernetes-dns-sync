@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ ci-fix ]
     tags: [ v* ]
     paths-ignore:
       - 'helm-chart/**'
@@ -70,7 +70,7 @@ jobs:
           key: deno-https/v1-${{ github.sha }}-doci
           restore-keys: deno-https/v1-
       - name: Install denodir-oci utility
-        run: deno install --allow-{read,write}=$HOME,${TMPDIR:-/tmp} --allow-run --allow-net --allow-env --reload=https://raw.githubusercontent.com https://raw.githubusercontent.com/cloudydeno/denodir-oci/main/doci/mod.ts
+        run: deno install --global --allow-read --allow-write=$HOME,${TMPDIR:-/tmp} --allow-run --allow-net --allow-env --reload=https://raw.githubusercontent.com https://raw.githubusercontent.com/cloudydeno/denodir-oci/main/doci/mod.ts
 
       - name: Determine image name
         id: name
@@ -100,5 +100,3 @@ jobs:
       #   run: doci pipeline push --tag ${{ steps.name.outputs.tag }} --target denodir
       - name: Push alpine image
         run: doci pipeline push --tag ${{ steps.name.outputs.tag }} --target alpine
-      - name: Push multiarch image
-        run: doci pipeline push --tag ${{ steps.name.outputs.tag }} --target multiarch
