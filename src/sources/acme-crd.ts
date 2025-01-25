@@ -26,7 +26,7 @@ export class AcmeCrdSource implements DnsSource {
     opts => this.crdApi.watchChallengeListForAllNamespaces({ ...opts }),
     {
       annotationFilter: () => this.config.annotation_filter ?? {},
-      resourceFilter: res => res.spec.solver.dns01?.webhook?.solverName === 'kubernetes-dns-sync',
+      resourceFilter: res => ['kubernetes-dns-sync', 'my-custom-solver'].includes(res.spec.solver.dns01?.webhook?.solverName ?? ''),
       changeDetectionKeys: res => [res.spec.key, res.spec.dnsName, res.spec.wildcard],
     });
 
