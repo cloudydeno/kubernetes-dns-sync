@@ -23,7 +23,7 @@ export async function setupLogs(opts: {
 }
 
 class JsonStdoutHandler extends log.handlers.ConsoleHandler {
-  format(logRecord: log.LogRecord): string {
+  override format(logRecord: log.LogRecord): string {
     const {args} = logRecord;
     return JSON.stringify({ ...logRecord,
       data: args.length > 1 ? args : args[0],
