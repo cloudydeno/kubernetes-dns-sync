@@ -38,7 +38,9 @@ jobs:
     - name: Cache https://
       uses: actions/cache@v4
       with:
-        path: ~/.cache/deno/remote/https ~/.cache/deno/gen/https
+        path: |
+          ~/.cache/deno/remote/https
+          ~/.cache/deno/gen/https
         key: deno-https/v2-${{ github.sha }}
         restore-keys: deno-https/v2-
 
@@ -66,7 +68,9 @@ jobs:
       - name: Cache https://
         uses: actions/cache@v4
         with:
-          path: ~/.cache/deno/remote/https ~/.cache/deno/gen/https
+          path: |
+            ~/.cache/deno/remote/https
+            ~/.cache/deno/gen/https
           key: deno-https/v2-${{ github.sha }}-doci
           restore-keys: deno-https/v2-
       - name: Install denodir-oci utility
