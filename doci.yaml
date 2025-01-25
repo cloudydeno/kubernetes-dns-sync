@@ -6,12 +6,13 @@ dependencyLayers:
 
 cacheFlags:
 - --unstable
+- --allow-import=deno.land,aws-api.deno.dev,crux.land
 runtimeFlags:
 - --unstable
-- --allow-hrtime
 - --allow-net
 - --allow-read
 - --allow-env
+- --allow-import=deno.land,aws-api.deno.dev,crux.land
 
 targets:
   alpine:
