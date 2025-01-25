@@ -18,6 +18,3 @@ targets:
   alpine:
     ref: ghcr.io/cloudydeno/dns-sync-alpine
     baseRef: denoland/deno:alpine-$DenoVersion
-  multiarch:
-    ref: ghcr.io/cloudydeno/dns-sync-multiarch
-    baseRef: lukechannings/deno:v$DenoVersion

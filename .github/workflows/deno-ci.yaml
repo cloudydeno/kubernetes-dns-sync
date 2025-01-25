@@ -38,7 +38,7 @@ jobs:
     - name: Cache https://
       uses: actions/cache@v4
       with:
-        path: ~/.cache/deno/deps/https
+        path: ~/.cache/deno/remote/https
         key: deno-https/v2-${{ github.sha }}
         restore-keys: deno-https/v2-
 
@@ -66,9 +66,9 @@ jobs:
       - name: Cache https://
         uses: actions/cache@v4
         with:
-          path: ~/.cache/deno/deps/https
-          key: deno-https/v1-${{ github.sha }}-doci
-          restore-keys: deno-https/v1-
+          path: ~/.cache/deno/remote/https
+          key: deno-https/v2-${{ github.sha }}-doci
+          restore-keys: deno-https/v2-
       - name: Install denodir-oci utility
         run: deno install --global --allow-read --allow-write=$HOME,${TMPDIR:-/tmp} --allow-run --allow-net --allow-env --reload=https://raw.githubusercontent.com https://raw.githubusercontent.com/cloudydeno/denodir-oci/main/doci/mod.ts
 
