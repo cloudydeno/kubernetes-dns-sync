@@ -15,31 +15,21 @@ jobs:
 
   check:
     runs-on: ubuntu-latest
-    name: Check w/ ${{ matrix.deno-version }}
-    strategy:
-      matrix:
-        deno-version:
-        - v2.3
-        - canary
-      fail-fast: false # run each branch to completion
+    name: Check
 
     steps:
     - name: Checkout source
       uses: actions/checkout@v5
 
-    - name: Use Deno ${{ matrix.deno-version }}
+    - name: Use Deno
       uses: denoland/setup-deno@v2
       with:
-        deno-version: ${{ matrix.deno-version }}
+        deno-version: v2.3
 
-    # "https" cache: code from the Internet
-    # External sources won't change much so we use less precise keys
-    - name: Cache https://
+    - name: Cache Deno
       uses: actions/cache@v4
       with:
-        path: |
-          ~/.cache/deno/remote/https
-          ~/.cache/deno/gen/https
+        path: ~/.cache/deno
         key: deno-https/v2-${{ github.sha }}
         restore-keys: deno-https/v2-
 
@@ -60,16 +50,14 @@ jobs:
     if: github.event_name == 'push'
 
     steps:
-      - name: Use Deno stable
+      - name: Use Deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.3
-      - name: Cache https://
+      - name: Cache Deno
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/deno/remote/https
-            ~/.cache/deno/gen/https
+          path: ~/.cache/deno
           key: deno-https/v2-${{ github.sha }}-doci
           restore-keys: deno-https/v2-
 
