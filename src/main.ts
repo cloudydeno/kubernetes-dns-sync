@@ -3,8 +3,6 @@
 import {
   log,
   TOML,
-  runMetricsServer,
-  replaceGlobalFetch,
 } from './deps.ts';
 
 import { isControllerConfig } from "./defs/config.ts";
@@ -37,12 +35,6 @@ log.info(`Configuration summary:
 const sources = await Promise.all(config.source.map(configureSource));
 const providers = config.provider.map(configureProvider);
 const registry = [config.registry].map(configureRegistry)[0];
-
-if (Deno.args.includes('--serve-metrics')) {
-  replaceGlobalFetch();
-  runMetricsServer({ port: 9090 });
-  log.info("Now serving OpenMetrics @ :9090/metrics");
-}
 
 // Main loop
 for await (const tickSource of createTickStream(config, sources)) {

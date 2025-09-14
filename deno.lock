@@ -7,6 +7,7 @@
     "jsr:@cloudydeno/oci-toolkit@0.3": "0.3.0",
     "jsr:@cloudydeno/stream-observables@1": "1.4.1",
     "jsr:@deno-library/progress@1": "1.5.1",
+    "jsr:@deno/graph@0.91": "0.91.0",
     "jsr:@std/assert@1": "1.0.14",
     "jsr:@std/crypto@1.0.4": "1.0.4",
     "jsr:@std/fmt@1.0.3": "1.0.3",
@@ -29,6 +30,7 @@
         "jsr:@cloudydeno/docker-registry-client",
         "jsr:@cloudydeno/oci-toolkit",
         "jsr:@cloudydeno/stream-observables",
+        "jsr:@deno/graph",
         "jsr:@std/assert",
         "jsr:@std/path",
         "jsr:@std/tar",
@@ -62,6 +64,9 @@
         "jsr:@std/fmt",
         "jsr:@std/io"
       ]
+    },
+    "@deno/graph@0.91.0": {
+      "integrity": "3633b67eeb2d46cc73cdbbb353018ca1ae4808b188a87257efca34954a8c5855"
     },
     "@std/assert@1.0.14": {
       "integrity": "68d0d4a43b365abc927f45a9b85c639ea18a9fab96ad92281e493e4ed84abaa4",
@@ -239,14 +244,6 @@
     "https://deno.land/x/kubernetes_client@v0.5.0/transports/mod.ts": "430dadaaa9f4a7288361df63a5a76cc122169a24399cd44f525bde68077c3ea1",
     "https://deno.land/x/kubernetes_client@v0.5.0/transports/via-kubeconfig.ts": "7c0e9340831ab67016f89cbbe9100dc718842917120eaee7b70fce049b86d6ad",
     "https://deno.land/x/kubernetes_client@v0.5.0/transports/via-kubectl-raw.ts": "9e683dc8bd6d1cb2229b80c9bfd62455bda4b2a25e0da3dab537e00b92e16cf3",
-    "https://deno.land/x/observability@v0.1.2/sinks/openmetrics/exposition.ts": "39335e2583c27c8f9051ca988a99b6947a6fdbeb643568baacfaee27eb35adaa",
-    "https://deno.land/x/observability@v0.1.2/sinks/openmetrics/registry.ts": "cf56732cf5e7a8ed7e327feb2a59d2ee978eabff4f8df056d3401d47ca160a50",
-    "https://deno.land/x/observability@v0.1.2/sinks/openmetrics/server.ts": "b49fa7fa4d36642ed29dbe10ba8c91ac53ec4d694703920983ad7141a612f241",
-    "https://deno.land/x/observability@v0.1.2/sinks/openmetrics/types.ts": "365064d79785eee7d2ef21ff4363fad3c2fb4180bace3d20db3077e6756a7f5a",
-    "https://deno.land/x/observability@v0.1.2/sources/deno.ts": "1912925c0e309f8e18a951823bcd62a58d2231fe50b224809ee733fc5bd3113a",
-    "https://deno.land/x/observability@v0.1.2/sources/fetch.ts": "77814041798811598ac37fdf652978b84e0f8cb9152e0799f02529cfe2567fcf",
-    "https://deno.land/x/observability@v0.1.2/sources/http-server.ts": "7ce1d46409e0a1fc8fa9862464b1f75d87d30266a8424f3fe506e7a4aa4ff39b",
-    "https://deno.land/x/observability@v0.1.2/sources/linux-procfs.ts": "6528f03856a338915b55adae3548ae2031c4e5771ee9eb9e61cc5da1d20c73a9",
     "https://deno.land/x/stream_observables@v1.3/combiners/merge.ts": "84cc8873f9c42b72d29ba4dbca6f7d4579276d7e8467856ae6cd22f8ffa149ff",
     "https://deno.land/x/stream_observables@v1.3/sources/external.ts": "8a8b47732e5e0de6abc0ba9faf796768779333df71deb3c4d8af8dc03fbb2333",
     "https://deno.land/x/stream_observables@v1.3/sources/from-iterable.ts": "5ab408f2e58c618144cfddbfc8a0d68faf09e01a571b7dc4c004e2b945eb40e3",
