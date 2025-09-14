@@ -24,7 +24,7 @@ jobs:
     - name: Use Deno
       uses: denoland/setup-deno@v2
       with:
-        deno-version: v2.3
+        deno-version: v2.4
 
     - name: Cache Deno
       uses: actions/cache@v4
@@ -53,7 +53,7 @@ jobs:
       - name: Use Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.3
+          deno-version: v2.4
       - name: Cache Deno
         uses: actions/cache@v4
         with:
