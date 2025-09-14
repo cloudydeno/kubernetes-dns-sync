@@ -19,8 +19,7 @@ jobs:
     strategy:
       matrix:
         deno-version:
-        - v2.0
-        - v2.1
+        - v2.3
         - canary
       fail-fast: false # run each branch to completion
 
@@ -64,7 +63,7 @@ jobs:
       - name: Use Deno stable
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.1
+          deno-version: v2.3
       - name: Cache https://
         uses: actions/cache@v4
         with:
@@ -73,8 +72,6 @@ jobs:
             ~/.cache/deno/gen/https
           key: deno-https/v2-${{ github.sha }}-doci
           restore-keys: deno-https/v2-
-      - name: Install denodir-oci utility
-        run: deno install --global --allow-read --allow-write=$HOME,${TMPDIR:-/tmp} --allow-run --allow-net --allow-env --reload=https://raw.githubusercontent.com https://raw.githubusercontent.com/cloudydeno/denodir-oci/main/doci/mod.ts
 
       - name: Determine image name
         id: name
@@ -99,8 +96,8 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Build denodir
-        run: doci pipeline build
+        run: deno task doci pipeline build
       # - name: Push denodir image
-      #   run: doci pipeline push --tag ${{ steps.name.outputs.tag }} --target denodir
+      #   run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target denodir
       - name: Push alpine image
-        run: doci pipeline push --tag ${{ steps.name.outputs.tag }} --target alpine
+        run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target alpine

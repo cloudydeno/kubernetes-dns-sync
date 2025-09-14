@@ -1,0 +1,10 @@
+{
+  "tasks": {
+    "doci": "deno run --allow-read --allow-write=$HOME,/tmp --allow-run --allow-net --allow-env @cloudydeno/doci/cli",
+    "dev": "deno run --watch --allow-env --allow-read --allow-run=kubectl --allow-net --allow-import=deno.land,crux.land,aws-api.deno.dev src/main.ts --once"
+  },
+  "imports": {
+    "@cloudydeno/doci": "jsr:@cloudydeno/doci@^0.3.3",
+    "@std/assert": "jsr:@std/assert@1"
+  }
+}
