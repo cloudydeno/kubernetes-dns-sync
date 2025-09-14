@@ -105,12 +105,6 @@
       "integrity": "sha512-/rCDK6AmxfRFIF4oCx3gx4judtdYQr+t1lmBDsbvFeiZImcCs6aUuorQyBml8xrGqC6S0acW2ZAu/zLX4NobUA=="
     }
   },
-  "redirects": {
-    "https://crux.land/4y3NGo#set-util": "https://crux.land/api/get/4y3NGo",
-    "https://crux.land/6DifM5#google-service-account": "https://crux.land/api/get/6DifM5",
-    "https://crux.land/api/get/4y3NGo": "https://crux.land/api/get/4y3NGo.ts",
-    "https://crux.land/api/get/6DifM5": "https://crux.land/api/get/6DifM5.ts"
-  },
   "remote": {
     "https://aws-api.deno.dev/v0.4/services/route53.ts?actions=ListHostedZones,ListResourceRecordSets,ChangeResourceRecordSets,GetChange": "d83e770251231cab33e7305d30b961095e7ee8f9574e692b78177b2130625716",
     "https://crux.land/api/get/4y3NGo.ts": "e3ec23da1a2690e0d33cbbc8c13cf9b1e3b24b5934c7a63bcdc8da13b1adf7ff",
