@@ -12,5 +12,5 @@ runtimeFlags:
 
 targets:
   alpine:
-    ref: ghcr.io/cloudydeno/dns-sync-alpine
+    ref: ghcr.io/cloudydeno/dns-sync
     baseRef: denoland/deno:alpine-$DenoVersion

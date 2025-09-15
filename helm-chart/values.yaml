@@ -39,7 +39,7 @@ dnsSync:
     txt_owner_id = "example"
 
 image:
-  repository: ghcr.io/cloudydeno/kubernetes-dns-sync
+  repository: ghcr.io/cloudydeno/dns-sync
   tag: ''
   digest: ''
   pullPolicy: '' # kubernetes default
