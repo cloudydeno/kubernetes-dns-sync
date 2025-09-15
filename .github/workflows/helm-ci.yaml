@@ -3,7 +3,7 @@ name: Helm
 on:
   workflow_dispatch:
   push:
-    branches: [ main, helm-on-ghcr ]
+    branches: [ main ]
     tags: [ v* ]
     paths-ignore:
       - 'manifests/**'
