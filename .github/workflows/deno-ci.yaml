@@ -44,13 +44,15 @@ jobs:
       if: always()
       run: time deno test
 
-  # Push image to GitHub Packages.
-  # See also https://docs.docker.com/docker-hub/builds/
   push:
     needs: check
     runs-on: ubuntu-latest
     name: 'Push container image'
     if: github.event_name == 'push'
+
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Use Deno
@@ -67,14 +69,11 @@ jobs:
       - name: Determine image name
         id: name
         run: |
-          IMAGE_ID=ghcr.io/cloudydeno/dns-sync
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           if [[ "${{ github.ref }}" == "refs/tags/"* ]]
           then VERSION=$( echo $VERSION | sed -e 's/^v//' )
           else VERSION=$( echo ${{ github.sha }} | cut -c1-7 )
           fi
-          echo "Will push to $IMAGE_ID:$VERSION"
-          echo "::set-output name=image::$IMAGE_ID"
+          echo "Will push tag $VERSION"
           echo "::set-output name=tag::$VERSION"
 
       - name: Log into GitHub Container Registry
@@ -88,7 +87,65 @@ jobs:
 
       - name: Build denodir
         run: deno task doci pipeline build
-      # - name: Push denodir image
-      #   run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target denodir
       - name: Push alpine image
         run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target alpine
+
+  check-chart:
+    runs-on: ubuntu-latest
+    name: Check Helm chart
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v5
+
+    - name: Install Helm
+      uses: azure/setup-helm@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Evaluate Chart
+      run: time helm template helm-chart
+
+  push-chart:
+    needs:
+    - push
+    - check-chart
+    runs-on: ubuntu-latest
+    name: 'Push Helm chart'
+    if: github.event_name == 'push'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Determine image tag
+        id: name
+        run: |
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]
+          then VERSION=$( echo $VERSION | sed -e 's/^v//' )
+          else VERSION=$( echo ${{ github.sha }} | cut -c1-7 )
+          fi
+          echo "Will push tag $VERSION"
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        run: echo "${GITHUB_TOKEN}" | helm registry login ghcr.io --username ${GITHUB_ACTOR} --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package chart
+        working-directory: helm-chart
+        run: helm package . -u -d dist --app-version "${{ steps.name.outputs.tag }}"
+
+      - name: Push chart
+        working-directory: helm-chart
+        run: helm push dist/*.tgz oci://ghcr.io/cloudydeno/charts
