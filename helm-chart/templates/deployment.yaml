@@ -24,7 +24,7 @@ spec:
       containers:
         - name: loop
           {{- with .Values.image }}
-          image: "{{ .repository }}{{ with .tag }}:{{ . }}{{ end }}{{ with .digest }}@{{ . }}{{ end }}"
+          image: "{{ .repository }}:{{ .tag | default $.Chart.AppVersion }}{{ with .digest }}@{{ . }}{{ end }}"
           {{- with .pullPolicy }}
           imagePullPolicy: {{ . | quote }}
           {{- end }}

@@ -2,5 +2,5 @@ apiVersion: v2
 name: dns-sync
 description: Manage hosted DNS providers using a Kubernetes control plane
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: latest
