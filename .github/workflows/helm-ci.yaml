@@ -3,10 +3,12 @@ name: Helm
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
-    paths:
-      - 'helm-chart/**'
-      - '.github/workflows/push-helm.yaml'
+    branches: [ main, test ]
+    tags: [ v* ]
+    paths-ignore:
+      - 'manifests/**'
+      - 'configs/**'
+      - '*.md'
   pull_request: {}
 
 permissions:
@@ -42,12 +44,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Determine image tag
+        id: name
+        run: |
+          IMAGE_ID=ghcr.io/cloudydeno/dns-sync
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]
+          then VERSION=$( echo $VERSION | sed -e 's/^v//' )
+          else VERSION=$( echo ${{ github.sha }} | cut -c1-7 )
+          fi
+          echo "Will push to $IMAGE_ID:$VERSION"
+          echo "::set-output name=image::$IMAGE_ID"
+          echo "::set-output name=tag::$VERSION"
+
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push the Helm Charts to GitHub Container Registry
-        uses: JimCronqvist/action-helm-chart-repo@master
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to GitHub Container Registry
+        run: echo "${GITHUB_TOKEN}" | helm registry login ghcr.io --username ${GITHUB_ACTOR} --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package chart
+        working-directory: helm-chart
+        run: helm package . -u dist/ --app-version "${{ steps.name.outputs.tag }}"
+
+      - name: Push chart
+        working-directory: helm-chart
+        run: helm push dist/*.tgz oci://ghcr.io/cloudydeno/charts

@@ -1,15 +1,18 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, test ]
     tags: [ v* ]
     paths-ignore:
-      - 'helm-chart/**'
       - 'manifests/**'
       - 'configs/**'
       - '*.md'
   pull_request: {}
+
+permissions:
+  contents: read
 
 jobs:
 
