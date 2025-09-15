@@ -35,7 +35,7 @@ export async function mainLoopIteration(
         continue;
       }
 
-      log.warning(`Applying ${state.Diff.length} recordset changes on ${state.Zone.fqdn}...`);
+      log.warn(`Applying ${state.Diff.length} recordset changes on ${state.Zone.fqdn}...`);
       await provider.ApplyChanges(state);
 
       console.log('');

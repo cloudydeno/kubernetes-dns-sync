@@ -17,9 +17,9 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
   constructor(
     public config: GoogleProviderConfig,
   ) {
-    this.projectId = this.config.project_id ?? this.api.projectId;
+    this.projectIdPromise = this.config.project_id ?? this.api.getProjectId();
   }
-  private projectId: string;
+  private projectIdPromise: string | Promise<string>;
   private api = new GoogleCloudDnsApi(
     Deno.args.includes('--dry-run') ? 'readonly' : 'readwrite',
     Deno.args.includes('--once'), // deno can't unref timers yet
@@ -29,7 +29,7 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
     const zones = new Array<Zone>();
     const zoneFilter = new Set(this.config.zone_filter ?? []);
     const domainFilter = new Set(this.config.domain_filter ?? []);
-    for await (const zone of this.api.listAllZones(this.projectId)) {
+    for await (const zone of this.api.listAllZones(await this.projectIdPromise)) {
       if (zoneFilter.size > 0 && !zoneFilter.has(zone.name!)) continue;
       if (domainFilter.size > 0 && !domainFilter.has(zone.dnsName!)) continue;
       zones.push({fqdn: zone.dnsName!.replace(/\.$/, ''), zoneName: zone.name!, zoneId: zone.id!});
@@ -55,7 +55,7 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
 
   async ListRecords(zone: Zone): Promise<GoogleRecord[]> {
     const endpoints = new Array<GoogleRecord>(); // every recordset we find
-    for await (const record of this.api.listAllRecords(this.projectId, zone.zoneId)) {
+    for await (const record of this.api.listAllRecords(await this.projectIdPromise, zone.zoneId)) {
       const dnsName = record.name!.replace(/\.$/, '');
 
       for (const rrdata of record.rrdatas ?? []) {
@@ -106,7 +106,7 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
       } - ${deletions?.length} deletions - ${additions?.length} additions`);
 
     let submitted: Schema$Change = await this.api
-      .submitChange(this.projectId, zone.zoneId, { additions, deletions });
+      .submitChange(await this.projectIdPromise, zone.zoneId, { additions, deletions });
 
     log.info(`Cloud DNS change ${submitted.id
       } on ${zone.zoneName} at ${submitted.startTime
@@ -120,7 +120,7 @@ export class GoogleProvider implements DnsProvider<GoogleRecord> {
       await new Promise(ok => setTimeout(ok, sleepSecs * 1000));
 
       submitted = await this.api
-        .getChange(this.projectId, zone.zoneId, submitted.id!);
+        .getChange(await this.projectIdPromise, zone.zoneId, submitted.id!);
 
       log.info(`Cloud DNS change ${submitted.id} is ${submitted.status}`);
     }

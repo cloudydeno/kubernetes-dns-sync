@@ -1,5 +1,4 @@
-import { ServiceAccount } from "../../deps.ts";
-
+import { ServiceAccount, ServiceAccountApi } from "../../deps.ts";
 import { JsonClient } from "../../lib/json-client.ts";
 
 export class GoogleCloudDnsApi extends JsonClient {
@@ -13,30 +12,31 @@ export class GoogleCloudDnsApi extends JsonClient {
     this.accessScope = `https://www.googleapis.com/auth/ndev.clouddns.${accessMode}`;
     this.noRefresh = noRefresh;
   }
-  #svcAccount: ServiceAccount;
+  #svcAccount: ServiceAccountApi;
   accessScope: string;
   noRefresh: boolean;
 
-  get projectId() {
-    if (!this.#svcAccount.projectId) throw new Error(
+  async getProjectId(): Promise<string> {
+    const projectId = await this.#svcAccount.getProjectId();
+    if (!projectId) throw new Error(
       `Google Cloud 'project_id' not found in service account key`);
-    return this.#svcAccount.projectId;
+    return projectId;
   }
 
   #cachedToken: string | null = null;
   async getAccessToken() {
     if (this.#cachedToken) return this.#cachedToken;
     // Fetch fresh token
-    const newToken = await this.#svcAccount.issueToken(this.accessScope);
+    const newToken = await this.#svcAccount.issueToken(this.accessScope.split(' '));
     // Cache for a limited time. Don't auto renew, will happen next request
-    this.#cachedToken = newToken.access_token;
-    const expireAfterMillis = Math.floor(newToken.expires_in * 0.95 * 1000);
+    this.#cachedToken = newToken.accessToken;
+    const expireAfterMillis = Math.floor((newToken.expiresAt.valueOf() - Date.now()) * 0.95);
     if (!this.noRefresh) setTimeout(() => {
-      if (this.#cachedToken === newToken.access_token) {
+      if (this.#cachedToken === newToken.accessToken) {
         this.#cachedToken = null;
       }
     }, Math.max(60 * 1000, expireAfterMillis));
-    return newToken.access_token;
+    return newToken.accessToken;
   }
   protected async addAuthHeaders(headers: Headers) {
     headers.set('authorization', `Bearer ${await this.getAccessToken()}`);

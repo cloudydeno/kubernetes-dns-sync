@@ -1,12 +1,12 @@
 import { log } from "../deps.ts";
 
-export async function setupLogs(opts: {
+export function setupLogs(opts: {
   logLevel: log.LevelName,
   logFormat: 'json' | 'console',
 }) {
-  await log.setup({
+  log.setup({
     handlers: {
-      console: new log.handlers.ConsoleHandler(opts.logLevel),
+      console: new log.ConsoleHandler(opts.logLevel),
       json: new JsonStdoutHandler(opts.logLevel),
     },
     loggers: {
@@ -15,14 +15,14 @@ export async function setupLogs(opts: {
         handlers: [opts.logFormat],
       },
       http: {
-        level: opts.logLevel == 'INFO' ? 'WARNING' : opts.logLevel,
+        level: opts.logLevel == 'INFO' ? 'WARN' : opts.logLevel,
         handlers: [opts.logFormat],
       },
     },
   });
 }
 
-class JsonStdoutHandler extends log.handlers.ConsoleHandler {
+class JsonStdoutHandler extends log.ConsoleHandler {
   override format(logRecord: log.LogRecord): string {
     const {args} = logRecord;
     return JSON.stringify({ ...logRecord,

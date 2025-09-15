@@ -1,4 +1,4 @@
-import { log, SetUtil } from "../deps.ts";
+import { log } from "../deps.ts";
 
 import type { TxtRegistryConfig } from "../defs/config.ts";
 import type { DnsRegistry, ZoneState, BaseRecord, SourceRecord } from "../defs/types.ts";
@@ -88,7 +88,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
         // We'll also update the registration with specific types if needed.
 
         // Then check if we need to add anything else:
-        for (const missingType of SetUtil.difference(desiredTypes, allowedTypes)) {
+        for (const missingType of desiredTypes.difference(allowedTypes)) {
           // If we want something but records already exist, leave that type alone
           for (const existingRecord of state.Existing) {
             if (existingRecord.dns.type !== missingType) continue;
@@ -112,7 +112,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
 
               if (ownership.isAdoptable) {
                 // TODO: any further safety checks on adoption?
-                log.warning(`WARN: adopting FQDN ${fqdn} from ${ownership.labels['external-dns/owner']}`);
+                log.warn(`WARN: adopting FQDN ${fqdn} from ${ownership.labels['external-dns/owner']}`);
                 stateDesired.delete(ownership.record); // Delete the other ownership record
                 areWeAdopting = true;
                 break; // This ownership record does not need further consideration
@@ -124,7 +124,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
           } else {
             if (ownership.isAdoptable) {
               // TODO: any further safety checks on adoption?
-              log.warning(`WARN: adopting FQDN ${fqdn} from ${ownership.labels['external-dns/owner']}`);
+              log.warn(`WARN: adopting FQDN ${fqdn} from ${ownership.labels['external-dns/owner']}`);
               stateDesired.delete(ownership.record); // Delete the other ownership record
               areWeAdopting = true;
 
@@ -160,7 +160,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
             resourceKeys.add(desiredRec.resourceKey);
           }
         } else {
-          log.warning(`Skipping ${desiredRec.dns.fqdn}/${desiredRec.dns.type} due to TXT registry overlap`);
+          log.warn(`Skipping ${desiredRec.dns.fqdn}/${desiredRec.dns.type} due to TXT registry overlap`);
         }
       }
 
@@ -171,7 +171,7 @@ export class TxtRegistry<Tinput extends BaseRecord> implements DnsRegistry<Tinpu
       if (resourceKeys.size == 1) {
         labels['external-dns/resource'] = Array.from(resourceKeys)[0];
       }
-      const managedTypes = SetUtil.intersection(desiredTypes, allowedTypes);
+      const managedTypes = desiredTypes.intersection(allowedTypes);
       for (const type of managedTypes) {
         if (!desiredTypes.has(type)) continue;
         labels[`record-type/${type}`] = 'managed';

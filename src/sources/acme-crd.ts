@@ -45,7 +45,7 @@ export class AcmeCrdSource implements DnsSource {
 
       // Require extra config to allow wildcard domains
       if (wildcard && this.config.allow_wildcards == false) {
-        log.warning(`ACME Challenge ${namespace}/${name} is for a wildcard, but that isn't allowed by dns-sync's configuration. Ignoring`);
+        log.warn(`ACME Challenge ${namespace}/${name} is for a wildcard, but that isn't allowed by dns-sync's configuration. Ignoring`);
         continue;
       }
 
