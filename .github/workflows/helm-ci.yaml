@@ -1,0 +1,54 @@
+name: Helm Publish
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'helm-chart/**'
+      - '.github/workflows/push-helm.yaml'
+  pull_request: {}
+
+permissions:
+  contents: read
+
+jobs:
+
+  check:
+    runs-on: ubuntu-latest
+    name: Check Helm chart
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v5
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+
+    - name: Test Chart
+      working-directory: helm-chart
+      run: time helm template
+
+  push:
+    needs: check
+    runs-on: ubuntu-latest
+    name: 'Push Helm chart'
+    if: github.event_name == 'push'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push the Helm Charts to GitHub Container Registry
+        uses: JimCronqvist/action-helm-chart-repo@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
