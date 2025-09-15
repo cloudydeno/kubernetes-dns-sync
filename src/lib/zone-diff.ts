@@ -1,5 +1,3 @@
-import { SetUtil } from "../deps.ts";
-
 import type {
   BaseRecord, ZoneState, DnsProvider, RecordGroupDiff,
 } from "../defs/types.ts";
@@ -15,7 +13,7 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
 
   const existingGroups = new Set(existingWithGroup.map(x => x.key));
   const desiredGroups = new Set(desiredWithGroup.map(x => x.key));
-  const intersectingGroups = SetUtil.intersection(existingGroups, desiredGroups);
+  const intersectingGroups = existingGroups.intersection(desiredGroups);
 
   for (const groupKey of existingGroups) {
     if (intersectingGroups.has(groupKey)) continue;
@@ -57,9 +55,9 @@ export function buildDiff<Trecord extends BaseRecord>(state: ZoneState<Trecord>,
       .filter(x => x.key == groupKey)
       .map(x => ({ key: rules.ComparisionKey(x.record), record: x.record }));
 
-    const intersectingKeys = SetUtil.intersection(
-      new Set(existing.map(x => x.key)),
-      new Set(desired.map(x => x.key)));
+    const existingSet = new Set(existing.map(x => x.key));
+    const desiredSet = new Set(desired.map(x => x.key));
+    const intersectingKeys = existingSet.intersection(desiredSet);
 
     if (intersectingKeys.size == existing.length && existing.length == desired.length) {
       // No changes! Right??

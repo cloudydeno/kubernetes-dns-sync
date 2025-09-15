@@ -35,11 +35,11 @@ jobs:
 
     - name: Check src/main.ts
       if: always()
-      run: time deno check --allow-import=deno.land,aws-api.deno.dev,crux.land src/main.ts
+      run: time deno check src/main.ts
 
     - name: Run test suite
       if: always()
-      run: time deno test --allow-import=deno.land,aws-api.deno.dev,crux.land
+      run: time deno test
 
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/

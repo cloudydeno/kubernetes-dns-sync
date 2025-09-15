@@ -4,15 +4,11 @@ entrypoint:
 dependencyLayers:
 - specifier: src/deps.ts
 
-cacheFlags:
-- --unstable
-- --allow-import=deno.land,aws-api.deno.dev,crux.land
 runtimeFlags:
-- --unstable
+- --unstable-http
 - --allow-net
 - --allow-read
 - --allow-env
-- --allow-import=deno.land,aws-api.deno.dev,crux.land
 
 targets:
   alpine:

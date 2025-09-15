@@ -1,10 +1,17 @@
 {
   "tasks": {
     "doci": "deno run --allow-read --allow-write=$HOME,/tmp --allow-run --allow-net --allow-env @cloudydeno/doci/cli",
-    "dev": "deno run --watch --allow-env --allow-read --allow-run=kubectl --allow-net --allow-import=deno.land,crux.land,aws-api.deno.dev src/main.ts --once"
+    "dev": "deno run --watch --allow-env --allow-read --allow-run=kubectl --allow-net src/main.ts --once"
   },
   "imports": {
-    "@cloudydeno/doci": "jsr:@cloudydeno/doci@^0.3.3",
-    "@std/assert": "jsr:@std/assert@1"
+    "@cloudydeno/aws-api": "jsr:@cloudydeno/aws-api@^0.9",
+    "@cloudydeno/bitesized": "jsr:@cloudydeno/bitesized@^1",
+    "@cloudydeno/doci": "jsr:@cloudydeno/doci@^0.3",
+    "@cloudydeno/kubernetes-apis": "jsr:@cloudydeno/kubernetes-apis@^0.5",
+    "@cloudydeno/kubernetes-client": "jsr:@cloudydeno/kubernetes-client@^0.7",
+    "@cloudydeno/stream-observables": "jsr:@cloudydeno/stream-observables@^1",
+    "@std/assert": "jsr:@std/assert@1",
+    "@std/log": "jsr:@std/log@^0.224",
+    "@std/toml": "jsr:@std/toml@^1"
   }
 }

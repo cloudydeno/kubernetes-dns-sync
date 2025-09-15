@@ -58,7 +58,7 @@ export function enrichSourceRecord(record: SourceRecord, opts: {
   minTtl: number,
 }): BaseRecord | null {
   if (!(record.dns.type in AllSupportedRecords)) {
-    log.warning(`WARN: unsupported desired record type ${record.dns.type} for ${record.dns.fqdn}`);
+    log.warn(`WARN: unsupported desired record type ${record.dns.type} for ${record.dns.fqdn}`);
     return null; // toss unsupported records
   }
 

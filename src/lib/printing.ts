@@ -36,7 +36,7 @@ export function printChanges<T extends BaseRecord>(changes: ZoneState<T>) {
     }
 
     // If we're leaving no records behind here, let's stress that a bit.
-    log[change.type == 'deletion' ? 'warning' : 'info'](lines.join('\n')+'\n');
+    log[change.type == 'deletion' ? 'warn' : 'info'](lines.join('\n')+'\n');
   }
 }
 
@@ -48,7 +48,7 @@ export function confirmBeforeApplyingChanges() {
   } else if (!Deno.args.includes('--yes')) {
     const result = prompt(`==> Proceed with editing provider records?`, 'no');
     if (result !== 'yes') {
-      log.warning(`User declined to perform provider edits`);
+      log.warn(`User declined to perform provider edits`);
       return false;
     }
   }

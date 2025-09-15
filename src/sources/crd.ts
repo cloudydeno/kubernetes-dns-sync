@@ -49,7 +49,7 @@ export class CrdSource implements DnsSource {
         }
 
         if (Object.keys(endp.labels ?? {}).length) {
-          log.warning(`WARN: CRD 'labels' field is not currently used by dns-sync`);
+          log.warn(`WARN: CRD 'labels' field is not currently used by dns-sync`);
         }
 
         const records = new Array<PlainRecordData>();
@@ -83,7 +83,7 @@ export class CrdSource implements DnsSource {
         this.#finalizers.set(resourceKey, () => this.crdApi
           .namespace(namespace)
           .replaceDNSEndpointStatus(name, resource)
-          .catch(err => log.warning(`Failed to observe DNSEndpoint CRD: ${err.message}`)));
+          .catch(err => log.warn(`Failed to observe DNSEndpoint CRD: ${err.message}`)));
       }
 
     }

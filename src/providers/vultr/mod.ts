@@ -128,7 +128,7 @@ function transformFromApi(zoneFqdn: string, record: DnsRecord): PlainRecord | fa
       };
     }
     default:
-      log.warning(`TODO: unsupported record type ${type} observed in Vultr zone at ${fqdn}`);
+      log.warn(`TODO: unsupported record type ${type} observed in Vultr zone at ${fqdn}`);
       const _: never = type;
   }
   return false;

@@ -93,7 +93,7 @@ export class KubernetesLister<
       this.reflector.run(); // kinda just toss this away...
       this.isRunning = true;
     } else {
-      log.warning(`Adding another event handler to existing WatchLister for ${this.label}`);
+      log.warn(`Adding another event handler to existing WatchLister for ${this.label}`);
     }
 
     log.info(`Observing ${this.label}...`);

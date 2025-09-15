@@ -80,7 +80,7 @@ export class Route53Provider implements DnsProvider<Route53Record> {
             rrset.SetIdentifier ||
             rrset.TrafficPolicyInstanceId ||
             rrset.Weight) {
-          log.warning(`Ignoring Route53 record set ${rrset.Name} ${rrset.Type
+          log.warn(`Ignoring Route53 record set ${rrset.Name} ${rrset.Type
             } because it uses features which kubernetes-dns-sync does not handle.`);
           continue;
         }
