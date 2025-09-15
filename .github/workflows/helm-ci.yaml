@@ -26,6 +26,8 @@ jobs:
 
     - name: Install Helm
       uses: azure/setup-helm@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Test Chart
       run: time helm template helm-chart
@@ -54,8 +56,8 @@ jobs:
           else VERSION=$( echo ${{ github.sha }} | cut -c1-7 )
           fi
           echo "Will push to $IMAGE_ID:$VERSION"
-          echo "::set-output name=image::$IMAGE_ID"
-          echo "::set-output name=tag::$VERSION"
+          echo "image=$IMAGE_ID" >> $GITHUB_OUTPUT
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Install Helm
         uses: azure/setup-helm@v3
@@ -69,7 +71,7 @@ jobs:
 
       - name: Package chart
         working-directory: helm-chart
-        run: helm package . -u dist/ --app-version "${{ steps.name.outputs.tag }}"
+        run: helm package . -u -d dist --app-version "${{ steps.name.outputs.tag }}"
 
       - name: Push chart
         working-directory: helm-chart
