@@ -55,58 +55,72 @@ jobs:
       packages: write
 
     steps:
-      - name: Use Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.4
-      - name: Cache Deno
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/deno
-          key: deno-https/v2-${{ github.sha }}-doci
-          restore-keys: deno-https/v2-
+    - name: Use Deno
+      uses: denoland/setup-deno@v2
+      with:
+        deno-version: v2.4
+    - name: Cache Deno
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/deno
+        key: deno-https/v2-${{ github.sha }}-doci
+        restore-keys: deno-https/v2-
 
-      - name: Determine image name
-        id: name
-        run: |
-          if [[ "${{ github.ref }}" == "refs/tags/"* ]]
-          then VERSION=$( echo $VERSION | sed -e 's/^v//' )
-          else VERSION=$( echo ${{ github.sha }} | cut -c1-7 )
-          fi
-          echo "Will push tag $VERSION"
-          echo "::set-output name=tag::$VERSION"
+    - name: Determine image name
+      id: name
+      run: |
+        if [[ "${{ github.ref }}" == "refs/tags/"* ]]
+        then VERSION=$( echo $VERSION | sed -e 's/^v//' )
+        else VERSION=$( echo ${{ github.sha }} | cut -c1-7 )
+        fi
+        echo "Will push tag $VERSION"
+        echo "tag=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Log into GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: x-access-token
-          password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Log into GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: x-access-token
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/checkout@v5
+    - uses: actions/checkout@v5
 
-      - name: Build denodir
-        run: deno task doci pipeline build
-      - name: Push alpine image
-        run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target alpine
-      - name: Push debian image
-        run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target debian
+    - name: Build denodir
+      run: deno task doci pipeline build
+    - name: Push alpine image
+      run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target alpine
+    - name: Push debian image
+      run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target debian
 
   check-chart:
     runs-on: ubuntu-latest
     name: Check Helm chart
 
+    outputs:
+      new-tag: chart-v${{ steps.chart.outputs.version }}
+      needs-release: ${{ steps.check-tag.outputs.exists == 'false' }}
     steps:
     - name: Checkout source
       uses: actions/checkout@v5
 
     - name: Install Helm
       uses: azure/setup-helm@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Evaluate Chart
       run: time helm template helm-chart
+
+    - name: Determine chart version
+      id: chart
+      run: |
+        helm show chart helm-chart
+        VERSION=$(helm show chart helm-chart|grep version|cut -d' ' -f2)
+        echo "Helm chart version is $VERSION"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    - name: Check if chart tag exists already
+      uses: mukunku/tag-exists-action@v1.6.0
+      id: check-tag
+      with:
+        tag: 'chart-v${{ steps.chart.outputs.version }}'
 
   push-chart:
     needs:
@@ -114,40 +128,49 @@ jobs:
     - check-chart
     runs-on: ubuntu-latest
     name: 'Push Helm chart'
-    if: github.event_name == 'push'
+    if: ${{ github.event_name == 'push' && needs.check-chart.outputs.needs-release == 'true' }}
 
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+    - name: Checkout
+      uses: actions/checkout@v5
 
-      - name: Determine image tag
-        id: name
-        run: |
-          if [[ "${{ github.ref }}" == "refs/tags/"* ]]
-          then VERSION=$( echo $VERSION | sed -e 's/^v//' )
-          else VERSION=$( echo ${{ github.sha }} | cut -c1-7 )
-          fi
-          echo "Will push tag $VERSION"
-          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+    - name: Install Helm
+      uses: azure/setup-helm@v4
 
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Determine image tag
+      id: name
+      run: |
+        if [[ "${{ github.ref }}" == "refs/tags/"* ]]
+        then VERSION=$( echo $VERSION | sed -e 's/^v//' )
+        else VERSION=$( echo ${{ github.sha }} | cut -c1-7 )
+        fi
+        echo "Will push tag $VERSION"
+        echo "tag=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Login to GitHub Container Registry
-        run: echo "${GITHUB_TOKEN}" | helm registry login ghcr.io --username ${GITHUB_ACTOR} --password-stdin
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Login to GitHub Container Registry
+      run: echo "${GITHUB_TOKEN}" | helm registry login ghcr.io --username ${GITHUB_ACTOR} --password-stdin
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Package chart
-        working-directory: helm-chart
-        run: helm package . -u -d dist --app-version "${{ steps.name.outputs.tag }}"
+    - name: Package chart
+      working-directory: helm-chart
+      run: helm package . -u -d dist --app-version "${{ steps.name.outputs.tag }}"
 
-      - name: Push chart
-        working-directory: helm-chart
-        run: helm push dist/*.tgz oci://ghcr.io/cloudydeno/charts
+    - name: Push chart
+      working-directory: helm-chart
+      run: helm push dist/*.tgz oci://ghcr.io/cloudydeno/charts
+
+    - name: Create chart tag
+      uses: actions/github-script@v5
+      with:
+        script: |
+          github.rest.git.createRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: 'refs/tags/${{ needs.check-chart.outputs.new-tag }}',
+            sha: context.sha
+          })
