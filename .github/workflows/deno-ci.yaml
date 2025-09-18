@@ -89,6 +89,8 @@ jobs:
         run: deno task doci pipeline build
       - name: Push alpine image
         run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target alpine
+      - name: Push debian image
+        run: deno task doci pipeline push --tag ${{ steps.name.outputs.tag }} --target debian
 
   check-chart:
     runs-on: ubuntu-latest
