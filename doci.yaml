@@ -5,7 +5,6 @@ dependencyLayers:
 - specifier: src/deps.ts
 
 runtimeFlags:
-- --unstable-http
 - --allow-net
 - --allow-read
 - --allow-env
