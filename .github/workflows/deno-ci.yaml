@@ -165,7 +165,7 @@ jobs:
       run: helm push dist/*.tgz oci://ghcr.io/cloudydeno/charts
 
     - name: Create chart tag
-      uses: actions/github-script@v5
+      uses: actions/github-script@v8
       with:
         script: |
           github.rest.git.createRef({
