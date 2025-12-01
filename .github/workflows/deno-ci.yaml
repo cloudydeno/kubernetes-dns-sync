@@ -22,7 +22,7 @@ jobs:
 
     steps:
     - name: Checkout source
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Use Deno
       uses: denoland/setup-deno@v2
@@ -83,7 +83,7 @@ jobs:
         username: x-access-token
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Build denodir
       run: deno task doci pipeline build
@@ -101,7 +101,7 @@ jobs:
       needs-release: ${{ steps.check-tag.outputs.exists == 'false' }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Install Helm
       uses: azure/setup-helm@v4
@@ -136,7 +136,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Install Helm
       uses: azure/setup-helm@v4
