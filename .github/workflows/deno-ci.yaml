@@ -30,7 +30,7 @@ jobs:
         deno-version: v2.4
 
     - name: Cache Deno
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.cache/deno
         key: deno-https/v2-${{ github.sha }}
@@ -60,7 +60,7 @@ jobs:
       with:
         deno-version: v2.4
     - name: Cache Deno
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.cache/deno
         key: deno-https/v2-${{ github.sha }}-doci
