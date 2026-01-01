@@ -117,7 +117,7 @@ jobs:
         echo "Helm chart version is $VERSION"
         echo "version=$VERSION" >> $GITHUB_OUTPUT
     - name: Check if chart tag exists already
-      uses: mukunku/tag-exists-action@v1.6.0
+      uses: mukunku/tag-exists-action@v1.7.0
       id: check-tag
       with:
         tag: 'chart-v${{ steps.chart.outputs.version }}'
