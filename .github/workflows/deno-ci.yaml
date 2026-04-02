@@ -104,7 +104,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Install Helm
-      uses: azure/setup-helm@v4
+      uses: azure/setup-helm@v5
 
     - name: Evaluate Chart
       run: time helm template helm-chart
@@ -139,7 +139,7 @@ jobs:
       uses: actions/checkout@v6
 
     - name: Install Helm
-      uses: azure/setup-helm@v4
+      uses: azure/setup-helm@v5
 
     - name: Determine image tag
       id: name
