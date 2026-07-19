@@ -4,14 +4,14 @@
     "dev": "deno run --watch --allow-env --allow-read --allow-run=kubectl --allow-net src/main.ts --once"
   },
   "imports": {
-    "@cloudydeno/aws-api": "jsr:@cloudydeno/aws-api@^0.9",
-    "@cloudydeno/bitesized": "jsr:@cloudydeno/bitesized@^1",
-    "@cloudydeno/doci": "jsr:@cloudydeno/doci@^0.3",
-    "@cloudydeno/kubernetes-apis": "jsr:@cloudydeno/kubernetes-apis@^0.6",
-    "@cloudydeno/kubernetes-client": "jsr:@cloudydeno/kubernetes-client@^0.7",
-    "@cloudydeno/stream-observables": "jsr:@cloudydeno/stream-observables@^1",
-    "@std/assert": "jsr:@std/assert@^1",
-    "@std/log": "jsr:@std/log@^0.224",
-    "@std/toml": "jsr:@std/toml@^1"
+    "@cloudydeno/aws-api": "jsr:@cloudydeno/aws-api@^0.10.0",
+    "@cloudydeno/bitesized": "jsr:@cloudydeno/bitesized@^1.0.9",
+    "@cloudydeno/doci": "jsr:@cloudydeno/doci@^0.4.0",
+    "@cloudydeno/kubernetes-apis": "jsr:@cloudydeno/kubernetes-apis@^0.7.2",
+    "@cloudydeno/kubernetes-client": "jsr:@cloudydeno/kubernetes-client@^0.8.1",
+    "@cloudydeno/stream-observables": "jsr:@cloudydeno/stream-observables@^1.5.0",
+    "@std/assert": "jsr:@std/assert@^1.0.19",
+    "@std/log": "jsr:@std/log@^0.224.14",
+    "@std/toml": "jsr:@std/toml@^1.0.11"
   }
 }
