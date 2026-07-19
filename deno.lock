@@ -2,14 +2,17 @@
   "version": "5",
   "specifiers": {
     "jsr:@cloudydeno/aws-api@0.10": "0.10.0",
+    "jsr:@cloudydeno/aws-codegen@0.9": "0.9.0",
     "jsr:@cloudydeno/bitesized@^1.0.4": "1.0.9",
     "jsr:@cloudydeno/bitesized@^1.0.9": "1.0.9",
     "jsr:@cloudydeno/doci@0.4": "0.4.0",
     "jsr:@cloudydeno/docker-registry-client@0.7": "0.7.0",
+    "jsr:@cloudydeno/jmespath@1": "1.0.1",
     "jsr:@cloudydeno/kubernetes-apis@~0.7.2": "0.7.2",
     "jsr:@cloudydeno/kubernetes-client@0.8": "0.8.1",
     "jsr:@cloudydeno/kubernetes-client@~0.8.1": "0.8.1",
     "jsr:@cloudydeno/oci-toolkit@0.4": "0.4.0",
+    "jsr:@cloudydeno/opentelemetry@0.10": "0.10.4",
     "jsr:@cloudydeno/opentelemetry@0.11": "0.11.1",
     "jsr:@cloudydeno/stream-observables@^1.5.0": "1.5.0",
     "jsr:@deno-library/progress@^1.5.1": "1.5.1",
@@ -18,6 +21,7 @@
     "jsr:@std/assert@^1.0.16": "1.0.19",
     "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/async@^1.0.14": "1.5.0",
+    "jsr:@std/cache@0.2": "0.2.3",
     "jsr:@std/collections@^1.1.3": "1.3.0",
     "jsr:@std/crypto@^1.0.5": "1.1.0",
     "jsr:@std/encoding@0.224.0": "0.224.0",
@@ -39,8 +43,10 @@
     "jsr:@std/tar@~0.1.9": "0.1.10",
     "jsr:@std/toml@^1.0.11": "1.0.11",
     "jsr:@std/yaml@1": "1.1.2",
+    "jsr:@std/yaml@^1.1.2": "1.1.2",
     "jsr:@takker/md5@0.1": "0.1.0",
     "jsr:@zaubrik/djwt@3": "3.0.2",
+    "npm:http-cache-semantics@4.2.0": "4.2.0",
     "npm:komando@1": "1.0.3",
     "npm:undici@7": "7.28.0"
   },
@@ -53,13 +59,25 @@
         "jsr:@takker/md5"
       ]
     },
+    "@cloudydeno/aws-codegen@0.9.0": {
+      "integrity": "c2b31646e6bf8e033138704895b1f405135b9b3a852a5c1e1fa87565d1201179",
+      "dependencies": [
+        "jsr:@cloudydeno/aws-api",
+        "jsr:@cloudydeno/jmespath",
+        "jsr:@cloudydeno/opentelemetry@0.10",
+        "jsr:@std/cache",
+        "jsr:@std/path@1",
+        "jsr:@std/yaml@^1.1.2",
+        "npm:http-cache-semantics"
+      ]
+    },
     "@cloudydeno/bitesized@1.0.9": {
       "integrity": "dbd5b63fcd803a93469451990ecc1e1769609324b2a91600cc21ccfe9c4f626f",
       "dependencies": [
-        "jsr:@cloudydeno/opentelemetry",
+        "jsr:@cloudydeno/opentelemetry@0.11",
         "jsr:@std/encoding@1",
         "jsr:@std/path@1",
-        "jsr:@std/yaml",
+        "jsr:@std/yaml@1",
         "jsr:@zaubrik/djwt"
       ]
     },
@@ -74,7 +92,7 @@
         "jsr:@std/assert@1",
         "jsr:@std/path@1",
         "jsr:@std/tar@0.1",
-        "jsr:@std/yaml",
+        "jsr:@std/yaml@1",
         "npm:komando"
       ]
     },
@@ -83,6 +101,9 @@
       "dependencies": [
         "jsr:@std/crypto"
       ]
+    },
+    "@cloudydeno/jmespath@1.0.1": {
+      "integrity": "de46849bf1dea8819bb2c6f574f2ca7faf25d14c36675407df797cccf76bf354"
     },
     "@cloudydeno/kubernetes-apis@0.7.2": {
       "integrity": "12dd29857228a695f75cbf91c8e630ad6ae73de174823f135a42d9b0a7cad608",
@@ -95,7 +116,7 @@
       "dependencies": [
         "jsr:@std/path@1",
         "jsr:@std/streams@1",
-        "jsr:@std/yaml",
+        "jsr:@std/yaml@1",
         "npm:undici"
       ]
     },
@@ -109,6 +130,9 @@
         "jsr:@std/path@^1.1.4",
         "jsr:@std/tar@~0.1.9"
       ]
+    },
+    "@cloudydeno/opentelemetry@0.10.4": {
+      "integrity": "6de17ad5a64fcf7e0d49e95c72d1ac0c9965274299fef3df8e113715ef384949"
     },
     "@cloudydeno/opentelemetry@0.11.1": {
       "integrity": "fcf3bec43e13170b40b0a22dc1212dd28b7c0bbd153e6b307275848444a276e2"
@@ -134,6 +158,9 @@
     },
     "@std/async@1.5.0": {
       "integrity": "4c1f22d287a17ad7d8643b1952bc5a4d21e5d8b68dc8c20d8268eecc69096e82"
+    },
+    "@std/cache@0.2.3": {
+      "integrity": "4e0bcab2e61f7c5637937bfe2bb13ccdd15e4dc3092beb14b78726bea8c49916"
     },
     "@std/collections@1.3.0": {
       "integrity": "eb36b43d784477ea0b476483ac034a14bdd182aff921c812ecf662a1fcef9498"
@@ -208,6 +235,9 @@
     }
   },
   "npm": {
+    "http-cache-semantics@4.2.0": {
+      "integrity": "sha512-dTxcvPXqPvXBQpq5dUr6mEMJX4oIEFv6bwom3FDwKRDsuIjjJGANqhBuoAn9c1RQJIdAKav33ED65E2ys+87QQ=="
+    },
     "komando@1.0.3": {
       "integrity": "sha512-/rCDK6AmxfRFIF4oCx3gx4judtdYQr+t1lmBDsbvFeiZImcCs6aUuorQyBml8xrGqC6S0acW2ZAu/zLX4NobUA=="
     },
@@ -218,6 +248,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@cloudydeno/aws-api@0.10",
+      "jsr:@cloudydeno/aws-codegen@0.9",
       "jsr:@cloudydeno/bitesized@^1.0.9",
       "jsr:@cloudydeno/doci@0.4",
       "jsr:@cloudydeno/kubernetes-apis@~0.7.2",

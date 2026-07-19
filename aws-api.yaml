@@ -1,0 +1,11 @@
+# https://github.com/cloudydeno/aws-api/#importing-service-clients
+outDir: src/aws-api
+opts:
+  docs: short
+services:
+  route53:
+    actions:
+      - ListHostedZones
+      - ListResourceRecordSets
+      - ChangeResourceRecordSets
+      - GetChange

@@ -1,10 +1,12 @@
 {
   "tasks": {
+    "aws-codegen": "deno run --allow-read=. --allow-write=. --allow-net @cloudydeno/aws-codegen/cli",
     "doci": "deno run --allow-read --allow-write=$HOME,/tmp --allow-run --allow-net --allow-env @cloudydeno/doci/cli",
     "dev": "deno run --watch --allow-env --allow-read --allow-run=kubectl --allow-net src/main.ts --once"
   },
   "imports": {
     "@cloudydeno/aws-api": "jsr:@cloudydeno/aws-api@^0.10.0",
+    "@cloudydeno/aws-codegen": "jsr:@cloudydeno/aws-codegen@^0.9.0",
     "@cloudydeno/bitesized": "jsr:@cloudydeno/bitesized@^1.0.9",
     "@cloudydeno/doci": "jsr:@cloudydeno/doci@^0.4.0",
     "@cloudydeno/kubernetes-apis": "jsr:@cloudydeno/kubernetes-apis@^0.7.2",
