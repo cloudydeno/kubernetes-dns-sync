@@ -27,12 +27,12 @@ export {
 //------------
 // assemble a customized observables-with-streams export
 
-import { fromIterable } from "@cloudydeno/stream-observables/sources/from-iterable.ts";
-import { fromTimer } from "@cloudydeno/stream-observables/sources/from-timer.ts";
-import { just } from "@cloudydeno/stream-observables/sources/just.ts";
-import { merge } from "@cloudydeno/stream-observables/combiners/merge.ts";
-import { map } from "@cloudydeno/stream-observables/transforms/map.ts";
-import { debounce } from "@cloudydeno/stream-observables/transforms/debounce.ts";
+import { fromIterable } from "@cloudydeno/stream-observables/sources/from-iterable";
+import { fromTimer } from "@cloudydeno/stream-observables/sources/from-timer";
+import { just } from "@cloudydeno/stream-observables/sources/just";
+import { merge } from "@cloudydeno/stream-observables/combiners/merge";
+import { map } from "@cloudydeno/stream-observables/transforms/map";
+import { debounce } from "@cloudydeno/stream-observables/transforms/debounce";
 
 export const ows = {
   fromIterable,
